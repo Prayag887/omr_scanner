@@ -1,0 +1,66 @@
+apply plugin: 'com.android.library'
+
+def openCVersionName = "4.5.1"
+def openCVersionCode = ((4 * 100 + 5) * 100 + 1) * 10 + 0
+
+println "OpenCV: " + openCVersionName + " " + project.buildscript.sourceFile
+
+android {
+    compileSdkVersion 33 // Updated to a more recent version
+    namespace = "org.opencv"
+
+    defaultConfig {
+        minSdkVersion 21
+        targetSdkVersion 33 // Updated to match compileSdkVersion
+
+        versionCode openCVersionCode
+        versionName openCVersionName
+
+        externalNativeBuild {
+            cmake {
+                arguments "-DANDROID_STL=c++_shared"
+                targets "opencv_jni_shared"
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            packagingOptions {
+                doNotStrip '**/*.so'  // Controlled by OpenCV CMake scripts
+            }
+        }
+        release {
+            packagingOptions {
+                doNotStrip '**/*.so'  // Controlled by OpenCV CMake scripts
+            }
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8 // Updated to Java 8
+        targetCompatibility JavaVersion.VERSION_1_8 // Updated to Java 8
+    }
+
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['native/libs']
+            java.srcDirs = ['java/src']
+            aidl.srcDirs = ['java/src']
+            res.srcDirs = ['java/res']
+            manifest.srcFile 'java/AndroidManifest.xml'
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path (project.projectDir.toString() + '/libcxx_helper/CMakeLists.txt')
+        }
+    }
+}
+
+dependencies {
+    // Add any required dependencies here
+}

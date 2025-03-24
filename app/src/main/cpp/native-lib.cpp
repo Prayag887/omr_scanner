@@ -1,0 +1,367 @@
+#include <jni.h>
+#include <opencv2/opencv.hpp>
+#include <vector>
+#include <numeric>
+#include <android/log.h>
+#include <fstream>
+
+#define LOG_TAG "OMRProcessor"
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+
+using namespace cv;
+using namespace std;
+
+const int OPTIONS_PER_QUESTION = 4;
+const double SELECTION_THRESHOLD = 0.6;
+const int MIN_BUBBLE_AREA = 50;
+const int MAX_BUBBLE_AREA = 1000;
+const int MIN_BUBBLE_DIMENSION = 10;
+const int MAX_BUBBLE_DIMENSION = 50;
+const int COLUMN_PADDING = 10;
+
+struct QuestionBubbles {
+    vector<Rect> options;
+    vector<float> fillPercentages;
+    vector<vector<Rect>> columnBubbles;
+};
+
+Mat preprocessForOMR(Mat& gray) {
+    Mat binary;
+    GaussianBlur(gray, gray, Size(3, 3), 0);
+    threshold(gray, binary, 150, 255, THRESH_BINARY_INV);
+    return binary;
+}
+
+vector<Rect> detectBubbles(Mat& binary) {
+    vector<vector<Point>> contours;
+    findContours(binary, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+
+    vector<Rect> bubbles;
+    for (const auto& contour : contours) {
+        Rect r = boundingRect(contour);
+        double area = contourArea(contour);
+
+        LOGI("Found contour: area=%f, width=%d, height=%d, x=%d, y=%d",
+             area, r.width, r.height, r.x, r.y);
+
+        if (area > MIN_BUBBLE_AREA && area < MAX_BUBBLE_AREA &&
+            r.width > MIN_BUBBLE_DIMENSION && r.width < MAX_BUBBLE_DIMENSION &&
+            r.height > MIN_BUBBLE_DIMENSION && r.height < MAX_BUBBLE_DIMENSION) {
+            bubbles.push_back(r);
+            LOGI("Added bubble at (%d,%d)", r.x, r.y);
+        }
+    }
+    return bubbles;
+}
+
+vector<Rect> filterDuplicates(vector<Rect>& bubbles, double minDist = 10.0) {
+    vector<Rect> filtered;
+    for (size_t i = 0; i < bubbles.size(); i++) {
+        bool duplicate = false;
+        Point2i center1(bubbles[i].x + bubbles[i].width/2,
+                        bubbles[i].y + bubbles[i].height/2);
+
+        for (const auto& f : filtered) {
+            Point2i center2(f.x + f.width/2, f.y + f.height/2);
+            if (norm(center1 - center2) < minDist) {
+                duplicate = true;
+                break;
+            }
+        }
+        if (!duplicate) filtered.push_back(bubbles[i]);
+    }
+    return filtered;
+}
+
+vector<vector<Rect>> organizeBubblesByQuestion(vector<Rect>& bubbles) {
+    const int ROW_THRESHOLD = 20;
+
+    sort(bubbles.begin(), bubbles.end(), [ROW_THRESHOLD](const Rect& a, const Rect& b) {
+        if (abs(a.y - b.y) > ROW_THRESHOLD)
+            return a.y < b.y;
+        return a.x < b.x;
+    });
+
+    LOGI("Total bubbles after sorting: %d", (int)bubbles.size());
+
+    vector<vector<Rect>> questions;
+    vector<Rect> currentRow;
+    int lastY = -1000;
+
+    for (const auto& bubble : bubbles) {
+        if (lastY == -1000 || bubble.y - lastY > ROW_THRESHOLD) {
+            if (!currentRow.empty()) {
+                sort(currentRow.begin(), currentRow.end(), [](const Rect& a, const Rect& b) {
+                    return (a.width * a.height) > (b.width * b.height);
+                });
+
+                vector<Rect> filteredRow;
+                int numToTake = min(OPTIONS_PER_QUESTION, (int)currentRow.size());
+                for (int i = 0; i < numToTake; i++)
+                    filteredRow.push_back(currentRow[i]);
+
+                sort(filteredRow.begin(), filteredRow.end(), [](const Rect& a, const Rect& b) {
+                    return a.x < b.x;
+                });
+
+                LOGI("Adding question with %d options", (int)filteredRow.size());
+                questions.push_back(filteredRow);
+                currentRow.clear();
+            }
+        }
+
+        currentRow.push_back(bubble);
+        lastY = bubble.y;
+        LOGI("Added bubble to current row: x=%d, y=%d", bubble.x, bubble.y);
+    }
+
+    if (!currentRow.empty()) {
+        sort(currentRow.begin(), currentRow.end(), [](const Rect& a, const Rect& b) {
+            return (a.width * a.height) > (b.width * b.height);
+        });
+
+        vector<Rect> filteredRow;
+        int numToTake = min(OPTIONS_PER_QUESTION, (int)currentRow.size());
+        for (int i = 0; i < numToTake; i++)
+            filteredRow.push_back(currentRow[i]);
+
+        sort(filteredRow.begin(), filteredRow.end(), [](const Rect& a, const Rect& b) {
+            return a.x < b.x;
+        });
+
+        questions.push_back(filteredRow);
+    }
+
+    LOGI("Organized %d questions", (int)questions.size());
+    return questions;
+}
+
+QuestionBubbles processColumns(Mat& binary) {
+    QuestionBubbles result;
+    vector<Rect> bubbles = detectBubbles(binary);
+    bubbles = filterDuplicates(bubbles);
+
+    vector<float> x_coords;
+    for (const auto& b : bubbles)
+        x_coords.push_back(b.x + b.width / 2.0f);
+
+    Mat data(x_coords.size(), 1, CV_32F, x_coords.data());
+    Mat labels, centers;
+    kmeans(data, 4, labels, TermCriteria(TermCriteria::EPS + TermCriteria::COUNT, 10, 1.0),
+           3, KMEANS_PP_CENTERS, centers);
+
+    vector<int> sortedIndices(4);
+    iota(sortedIndices.begin(), sortedIndices.end(), 0);
+    sort(sortedIndices.begin(), sortedIndices.end(), [&](int a, int b) {
+        return centers.at<float>(a) < centers.at<float>(b);
+    });
+
+    vector<vector<Rect>> columns(4);
+    for (size_t i = 0; i < bubbles.size(); ++i)
+        columns[labels.at<int>(i)].push_back(bubbles[i]);
+
+    for (int col = 0; col < 4; ++col) {
+        int actualCol = sortedIndices[col];
+        auto& colBubbles = columns[actualCol];
+        if (colBubbles.empty()) continue;
+
+        int min_x = INT_MAX, max_x = 0, min_y = INT_MAX, max_y = 0;
+        for (const auto& b : colBubbles) {
+            min_x = min(min_x, b.x);
+            max_x = max(max_x, b.x + b.width);
+            min_y = min(min_y, b.y);
+            max_y = max(max_y, b.y + b.height);
+        }
+
+        const int TOP_PADDING = 100;
+        const int BOTTOM_PADDING = 100;
+
+        Rect roi(
+                max(0, min_x - COLUMN_PADDING),
+                max(0, min_y - TOP_PADDING),
+                min(binary.cols - 1, max_x - min_x + 2 * COLUMN_PADDING),
+                min(binary.rows - 1, max_y - min_y + 2 * COLUMN_PADDING + BOTTOM_PADDING)
+        );
+
+        Mat columnImg = binary(roi);
+        string colPath = "/data/data/com.example.myapplication/files/column_" +
+                         to_string(col + 1) + ".png";
+        imwrite(colPath, columnImg);
+
+        sort(colBubbles.begin(), colBubbles.end(), [](const Rect& a, const Rect& b) {
+            return a.y < b.y;
+        });
+
+        result.columnBubbles.push_back(colBubbles);
+    }
+
+    return result;
+}
+
+pair<vector<int>, vector<Rect>> analyzeColumn(Mat& columnImg, int colIndex) {
+    vector<int> answers;
+    vector<Rect> selectedBubbles;
+
+    vector<Rect> bubbles = detectBubbles(columnImg);
+    bubbles = filterDuplicates(bubbles, 15.0);
+
+    if (bubbles.empty()) {
+        LOGE("No bubbles detected in column %d", colIndex + 1);
+        return {answers, selectedBubbles};
+    }
+
+    vector<vector<Rect>> questions = organizeBubblesByQuestion(bubbles);
+
+    Mat debugImg;
+    cvtColor(columnImg, debugImg, COLOR_GRAY2BGR);
+
+    for (size_t q = 0; q < questions.size(); q++) {
+        auto& options = questions[q];
+
+        if (options.size() != OPTIONS_PER_QUESTION) {
+            LOGE("Question %d has %d options instead of %d",
+                 (int)q+1, (int)options.size(), OPTIONS_PER_QUESTION);
+
+            for (const auto& opt : options) {
+                rectangle(debugImg, opt, Scalar(0, 0, 255), 2);
+
+                Point textPos(opt.x, opt.y - 5);
+                if (textPos.y < 5) textPos.y = opt.y + 15;
+
+                putText(debugImg, "Q" + to_string(q+1), textPos,
+                        FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 255), 1);
+            }
+
+            answers.push_back(-1);
+            selectedBubbles.push_back(Rect(-1, -1, 0, 0));
+            continue;
+        }
+
+        for (size_t o = 0; o < options.size(); o++) {
+            rectangle(debugImg, options[o], Scalar(255, 0, 0), 1);
+
+            string label = "Q" + to_string(q+1) + char('A' + o);
+            Point textPos(options[o].x + 5, options[o].y - 5);
+            if (textPos.y < 5) textPos.y = options[o].y + 15;
+
+            putText(debugImg, label, textPos, FONT_HERSHEY_SIMPLEX,
+                    0.5, Scalar(0, 255, 255), 1);
+        }
+
+        vector<float> fills;
+        for (const auto& opt : options) {
+            Mat roi = columnImg(opt);
+            float fill = countNonZero(roi) / (float)(roi.total());
+            fills.push_back(fill);
+
+            LOGI("Q%d-%c fill: %.2f", (int)q+1, 'A' + fills.size() - 1, fill);
+        }
+
+        int selected = -1;
+        float maxFill = 0;
+        for (size_t o = 0; o < fills.size(); o++) {
+            if (fills[o] > SELECTION_THRESHOLD && fills[o] > maxFill) {
+                maxFill = fills[o];
+                selected = o;
+            }
+        }
+
+        answers.push_back(selected);
+
+        if (selected != -1) {
+            selectedBubbles.push_back(options[selected]);
+            rectangle(debugImg, options[selected], Scalar(0, 255, 0), 2);
+        } else {
+            selectedBubbles.push_back(Rect(-1, -1, 0, 0));
+        }
+    }
+
+    string debugPath = "/data/data/com.example.myapplication/files/debug_column_" +
+                       to_string(colIndex + 1) + ".png";
+    imwrite(debugPath, debugImg);
+
+    return {answers, selectedBubbles};
+}
+
+void generateMarkedImage(Mat& columnImg, vector<Rect>& bubbles,
+                         const vector<Rect>& selected, int colIndex) {
+    Mat marked;
+    cvtColor(columnImg, marked, COLOR_GRAY2BGR);
+
+    vector<vector<Rect>> questions = organizeBubblesByQuestion(bubbles);
+
+    for (size_t q = 0; q < questions.size(); q++) {
+        auto& options = questions[q];
+
+        for (size_t o = 0; o < options.size(); o++) {
+            if (o >= OPTIONS_PER_QUESTION) break;
+
+            rectangle(marked, options[o], Scalar(255, 0, 0), 1);
+
+            string label = "" + static_cast<char>('A' + o);
+            Point textPos(options[o].x + 5, options[o].y - 5);
+            if (textPos.y < 10) textPos.y = options[o].y + 15;
+
+            putText(marked, label, textPos, FONT_HERSHEY_SIMPLEX,
+                    0.5, Scalar(0, 255, 255), 2, LINE_AA);
+        }
+    }
+
+    for (const auto& sel : selected) {
+        if (sel.x < 0 || sel.y < 0) continue;
+
+        rectangle(marked, sel, Scalar(0, 255, 0), 2);
+
+        Point checkPos(sel.x + 10, sel.y + sel.height / 2);
+        putText(marked, "✓", checkPos, FONT_HERSHEY_SIMPLEX,
+                0.7, Scalar(0, 255, 0), 2, LINE_AA);
+    }
+
+    string path = "/data/data/com.example.myapplication/files/marked_column_" +
+                  to_string(colIndex + 1) + ".png";
+    imwrite(path, marked);
+}
+
+extern "C"
+JNIEXPORT jintArray JNICALL
+Java_com_example_myapplication_MainActivity_processOMR(JNIEnv* env, jobject, jlong matAddr) {
+    Mat input = *(Mat*)matAddr;
+    vector<int> finalAnswers;
+
+    try {
+        Mat gray, binary;
+        cvtColor(input, gray, COLOR_RGBA2GRAY);
+        binary = preprocessForOMR(gray);
+
+        QuestionBubbles qb = processColumns(binary);
+
+        for (int col = 0; col < 4; col++) {
+            string colPath = "/data/data/com.example.myapplication/files/column_" +
+                             to_string(col+1) + ".png";
+            Mat columnImg = imread(colPath, IMREAD_GRAYSCALE);
+
+            if (columnImg.empty()) {
+                LOGE("Failed to load column %d", col+1);
+                continue;
+            }
+
+            vector<Rect> columnBubbles = detectBubbles(columnImg);
+            columnBubbles = filterDuplicates(columnBubbles, 15.0);
+
+            auto [answers, selected] = analyzeColumn(columnImg, col);
+
+            generateMarkedImage(columnImg, columnBubbles, selected, col);
+
+            finalAnswers.insert(finalAnswers.end(), answers.begin(), answers.end());
+        }
+    }
+    catch (const Exception& e) {
+        LOGE("Processing failed: %s", e.what());
+        finalAnswers = {-1};
+    }
+
+    jintArray result = env->NewIntArray(finalAnswers.size());
+    env->SetIntArrayRegion(result, 0, finalAnswers.size(), finalAnswers.data());
+    return result;
+}
