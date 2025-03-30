@@ -30,6 +30,10 @@ Mat preprocessForOMR(Mat& gray) {
     Mat binary;
     GaussianBlur(gray, gray, Size(3, 3), 0);
     threshold(gray, binary, 150, 255, THRESH_BINARY_INV);
+    // Save the binary image
+    string colPath = "/data/data/com.example.myapplication/files/binary.png";
+    imwrite(colPath, binary);
+
     return binary;
 }
 
@@ -75,65 +79,38 @@ vector<Rect> filterDuplicates(vector<Rect>& bubbles, double minDist = 10.0) {
 }
 
 vector<vector<Rect>> organizeBubblesByQuestion(vector<Rect>& bubbles) {
-    const int ROW_THRESHOLD = 20;
+    vector<vector<Rect>> questions;
 
-    sort(bubbles.begin(), bubbles.end(), [ROW_THRESHOLD](const Rect& a, const Rect& b) {
-        if (abs(a.y - b.y) > ROW_THRESHOLD)
-            return a.y < b.y;
-        return a.x < b.x;
+    // Sort bubbles by Y first (top-to-bottom), then by X (left-to-right)
+    sort(bubbles.begin(), bubbles.end(), [](const Rect &a, const Rect &b) {
+        return (a.y == b.y) ? (a.x < b.x) : (a.y < b.y);
     });
 
-    LOGI("Total bubbles after sorting: %d", (int)bubbles.size());
-
-    vector<vector<Rect>> questions;
-    vector<Rect> currentRow;
-    int lastY = -1000;
+    const int VERTICAL_THRESHOLD = 15; // Allow minor vertical misalignment
 
     for (const auto& bubble : bubbles) {
-        if (lastY == -1000 || bubble.y - lastY > ROW_THRESHOLD) {
-            if (!currentRow.empty()) {
-                sort(currentRow.begin(), currentRow.end(), [](const Rect& a, const Rect& b) {
-                    return (a.width * a.height) > (b.width * b.height);
-                });
+        bool added = false;
 
-                vector<Rect> filteredRow;
-                int numToTake = min(OPTIONS_PER_QUESTION, (int)currentRow.size());
-                for (int i = 0; i < numToTake; i++)
-                    filteredRow.push_back(currentRow[i]);
-
-                sort(filteredRow.begin(), filteredRow.end(), [](const Rect& a, const Rect& b) {
-                    return a.x < b.x;
-                });
-
-                LOGI("Adding question with %d options", (int)filteredRow.size());
-                questions.push_back(filteredRow);
-                currentRow.clear();
+        for (auto& question : questions) {
+            if (abs(question[0].y - bubble.y) < VERTICAL_THRESHOLD) {
+                question.push_back(bubble);
+                added = true;
+                break;
             }
         }
 
-        currentRow.push_back(bubble);
-        lastY = bubble.y;
-        LOGI("Added bubble to current row: x=%d, y=%d", bubble.x, bubble.y);
+        if (!added) {
+            questions.push_back({bubble});
+        }
     }
 
-    if (!currentRow.empty()) {
-        sort(currentRow.begin(), currentRow.end(), [](const Rect& a, const Rect& b) {
-            return (a.width * a.height) > (b.width * b.height);
-        });
-
-        vector<Rect> filteredRow;
-        int numToTake = min(OPTIONS_PER_QUESTION, (int)currentRow.size());
-        for (int i = 0; i < numToTake; i++)
-            filteredRow.push_back(currentRow[i]);
-
-        sort(filteredRow.begin(), filteredRow.end(), [](const Rect& a, const Rect& b) {
+    // Ensure bubbles within each question are sorted left-to-right
+    for (auto& question : questions) {
+        sort(question.begin(), question.end(), [](const Rect &a, const Rect &b) {
             return a.x < b.x;
         });
-
-        questions.push_back(filteredRow);
     }
 
-    LOGI("Organized %d questions", (int)questions.size());
     return questions;
 }
 
@@ -177,12 +154,13 @@ QuestionBubbles processColumns(Mat& binary) {
         const int TOP_PADDING = 100;
         const int BOTTOM_PADDING = 100;
 
-        Rect roi(
-                max(0, min_x - COLUMN_PADDING),
-                max(0, min_y - TOP_PADDING),
-                min(binary.cols - 1, max_x - min_x + 2 * COLUMN_PADDING),
-                min(binary.rows - 1, max_y - min_y + 2 * COLUMN_PADDING + BOTTOM_PADDING)
-        );
+        int x = max(0, min_x - COLUMN_PADDING);
+        int y = max(0, min_y - TOP_PADDING);
+        int w = min(binary.cols - x, max_x - min_x + 2 * COLUMN_PADDING);
+        int h = min(binary.rows - y, max_y - min_y + 2 * COLUMN_PADDING + BOTTOM_PADDING);
+
+        Rect roi(x, y, w, h);
+
 
         Mat columnImg = binary(roi);
         string colPath = "/data/data/com.example.myapplication/files/column_" +
@@ -229,8 +207,8 @@ pair<vector<int>, vector<Rect>> analyzeColumn(Mat& columnImg, int colIndex) {
                 Point textPos(opt.x, opt.y - 5);
                 if (textPos.y < 5) textPos.y = opt.y + 15;
 
-                putText(debugImg, "Q" + to_string(q+1), textPos,
-                        FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 255), 1);
+                putText(debugImg, "" + to_string(q+1), textPos,
+                        FONT_HERSHEY_SIMPLEX, 0.35, Scalar(0, 0, 255), 1);
             }
 
             answers.push_back(-1);
@@ -246,7 +224,7 @@ pair<vector<int>, vector<Rect>> analyzeColumn(Mat& columnImg, int colIndex) {
             if (textPos.y < 5) textPos.y = options[o].y + 15;
 
             putText(debugImg, label, textPos, FONT_HERSHEY_SIMPLEX,
-                    0.5, Scalar(0, 255, 255), 1);
+                    0.25, Scalar(0, 255, 255), 1);
         }
 
         vector<float> fills;
@@ -304,7 +282,7 @@ void generateMarkedImage(Mat& columnImg, vector<Rect>& bubbles,
             if (textPos.y < 10) textPos.y = options[o].y + 15;
 
             putText(marked, label, textPos, FONT_HERSHEY_SIMPLEX,
-                    0.5, Scalar(0, 255, 255), 2, LINE_AA);
+                    0.25, Scalar(0, 255, 255), 2, LINE_AA);
         }
     }
 

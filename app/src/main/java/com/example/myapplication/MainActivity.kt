@@ -353,7 +353,7 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
             Log.d(TAG, "Marker file found at: ${markerFile.absolutePath}")
 
             // Detect marker and update image
-            if (detected) {
+            if (true) {
                 // Convert modified Mat back to Bitmap
                 val resultBitmap = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888)
                 Utils.matToBitmap(mat, resultBitmap)
