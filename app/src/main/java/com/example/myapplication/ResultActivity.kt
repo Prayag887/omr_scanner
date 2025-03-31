@@ -13,7 +13,7 @@ class ResultActivity : AppCompatActivity() {
         val txtResults = findViewById<TextView>(R.id.txtResults)
         val btnBack = findViewById<Button>(R.id.btnBack)
 
-        val answers = intent.getIntArrayExtra("answers")
+        val answers = intent.getIntArrayExtra("omr_results")
         val resultText = answers?.mapIndexed { index, answer ->
             "Q${index + 1}: ${if (answer == -1) "Unmarked" else "Option $answer"}"
         }?.joinToString("\n")

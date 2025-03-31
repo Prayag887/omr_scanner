@@ -26,11 +26,36 @@ struct QuestionBubbles {
     vector<vector<Rect>> columnBubbles;
 };
 
+//Mat preprocessForOMR(Mat& gray) {
+//    Mat binary;
+//    GaussianBlur(gray, gray, Size(3, 3), 0);
+//    threshold(gray, binary, 150, 255, THRESH_BINARY_INV);
+//    // Save the binary image
+//    string colPath = "/data/data/com.example.myapplication/files/binary.png";
+//    imwrite(colPath, binary);
+//
+//    return binary;
+//}
+
+
 Mat preprocessForOMR(Mat& gray) {
-    Mat binary;
-    GaussianBlur(gray, gray, Size(3, 3), 0);
-    threshold(gray, binary, 150, 255, THRESH_BINARY_INV);
-    // Save the binary image
+    Mat binary, normalized;
+
+    // Normalize brightness variations to minimize shadow effects
+    Mat floatGray;
+    gray.convertTo(floatGray, CV_32F);  // Convert to float for precise calculations
+    Mat meanMat;
+    blur(floatGray, meanMat, Size(25, 25));  // Local mean (smooth over a large area)
+    normalized = floatGray - meanMat;  // Subtract local mean to remove global brightness
+    normalize(normalized, normalized, 0, 255, NORM_MINMAX, CV_8U);  // Scale back to [0, 255]
+
+    // Apply Gaussian Blur to reduce noise
+    GaussianBlur(normalized, normalized, Size(3, 3), 0);
+
+    // Apply Adaptive Thresholding (similar to Sauvola)
+    adaptiveThreshold(normalized, binary, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY_INV, 15, 5);
+
+    // Save the processed image
     string colPath = "/data/data/com.example.myapplication/files/binary.png";
     imwrite(colPath, binary);
 

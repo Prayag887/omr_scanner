@@ -389,6 +389,14 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
             // Send Mat address to native function
             val resultArray = processOMR(processedMat.nativeObjAddr)
 
+            // Convert resultArray to an Intent Extra
+            val intent = Intent(this, ResultActivity::class.java).apply {
+                putExtra("omr_results", resultArray)
+            }
+
+            // Start the ResultActivity
+            startActivity(intent)
+
             Log.d(TAG, "OMR Result: ${resultArray.joinToString(", ")}")
 
             // The C++ code now draws contours on the processedMat directly
