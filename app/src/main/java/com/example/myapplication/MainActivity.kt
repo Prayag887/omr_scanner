@@ -6,12 +6,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.ImageDecoder
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.os.Environment
-import android.provider.MediaStore
 import android.util.Log
 import android.view.View
 import android.widget.Button
@@ -20,8 +16,12 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
-import org.opencv.android.*
+import org.opencv.android.BaseLoaderCallback
+import org.opencv.android.CameraBridgeViewBase
+import org.opencv.android.JavaCameraView
+import org.opencv.android.LoaderCallbackInterface
+import org.opencv.android.OpenCVLoader
+import org.opencv.android.Utils
 import org.opencv.core.Core
 import org.opencv.core.Mat
 import org.opencv.core.MatOfPoint
@@ -33,7 +33,8 @@ import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
 import java.io.File
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListener2 {
     private lateinit var imageView: ImageView
@@ -53,7 +54,6 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
     companion object {
         private const val TAG = "MainActivity"
         private const val CAMERA_REQUEST_CODE = 100
-        private const val GALLERY_REQUEST_CODE = 200
         private const val CAMERA_PERMISSION_REQUEST_CODE = 300
         private const val MARKER_NAME = "omr_marker.jpg"
     }
@@ -118,8 +118,6 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
                 checkMarkerAndDisplay(selectedBitmap)
                 toggleLiveMode()
             }
-        } else {
-            openCamera()
         }
     }
 
@@ -297,18 +295,6 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
     }
 
 
-    private fun openCamera() {
-        Intent(MediaStore.ACTION_IMAGE_CAPTURE).also { takePictureIntent ->
-            takePictureIntent.resolveActivity(packageManager)?.also {
-                val photoFile = createImageFile()
-                val photoURI = FileProvider.getUriForFile(this, "$packageName.fileprovider", photoFile)
-                currentPhotoPath = photoFile.absolutePath
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
-                startActivityForResult(takePictureIntent, CAMERA_REQUEST_CODE)
-            }
-        }
-    }
-
     private fun createImageFile(): File {
         val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
         val storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES)
@@ -321,12 +307,6 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         super.onActivityResult(requestCode, resultCode, data)
         if (resultCode == Activity.RESULT_OK) {
             when (requestCode) {
-                GALLERY_REQUEST_CODE -> {
-                    data?.data?.let { uri ->
-                        selectedBitmap = loadBitmapFromUri(uri)
-                        checkMarkerAndDisplay(selectedBitmap)
-                    }
-                }
                 CAMERA_REQUEST_CODE -> {
                     currentPhotoPath?.let { path ->
                         val bitmap = BitmapFactory.decodeFile(path)
@@ -338,13 +318,6 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         }
     }
 
-    private fun loadBitmapFromUri(uri: Uri): Bitmap? {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            ImageDecoder.decodeBitmap(ImageDecoder.createSource(contentResolver, uri))
-        } else {
-            MediaStore.Images.Media.getBitmap(contentResolver, uri)
-        }
-    }
 
     private fun checkMarkerAndDisplay(bitmap: Bitmap?) {
         bitmap?.let {
