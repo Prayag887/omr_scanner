@@ -26,17 +26,6 @@ struct QuestionBubbles {
     vector<vector<Rect>> columnBubbles;
 };
 
-//Mat preprocessForOMR(Mat& gray) {
-//    Mat binary;
-//    GaussianBlur(gray, gray, Size(3, 3), 0);
-//    threshold(gray, binary, 150, 255, THRESH_BINARY_INV);
-//    // Save the binary image
-//    string colPath = "/data/data/com.example.myapplication/files/binary.png";
-//    imwrite(colPath, binary);
-//
-//    return binary;
-//}
-
 
 Mat preprocessForOMR(Mat& gray) {
     Mat binary, normalized;
@@ -55,7 +44,6 @@ Mat preprocessForOMR(Mat& gray) {
     // Apply Adaptive Thresholding (similar to Sauvola)
     adaptiveThreshold(normalized, binary, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY_INV, 15, 5);
 
-    // Save the processed image
     string colPath = "/data/data/com.example.myapplication/files/binary.png";
     imwrite(colPath, binary);
 
@@ -111,8 +99,7 @@ vector<vector<Rect>> organizeBubblesByQuestion(vector<Rect>& bubbles) {
         return (a.y == b.y) ? (a.x < b.x) : (a.y < b.y);
     });
 
-    const int VERTICAL_THRESHOLD = 15; // Allow minor vertical misalignment
-
+    const int VERTICAL_THRESHOLD = 15;
     for (const auto& bubble : bubbles) {
         bool added = false;
 
@@ -329,34 +316,68 @@ void generateMarkedImage(Mat& columnImg, vector<Rect>& bubbles,
 extern "C"
 JNIEXPORT jintArray JNICALL
 Java_com_example_myapplication_MainActivity_processOMR(JNIEnv* env, jobject, jlong matAddr) {
-    Mat input = *(Mat*)matAddr;
     vector<int> finalAnswers;
 
     try {
-        Mat gray, binary;
-        cvtColor(input, gray, COLOR_RGBA2GRAY);
-        binary = preprocessForOMR(gray);
+        // Load the saved paper image instead of using matAddr
+        string paperPath = "/data/data/com.example.myapplication/files/paper.png";
+        Mat input = imread(paperPath, IMREAD_COLOR);
 
-        QuestionBubbles qb = processColumns(binary);
+        if (input.empty()) {
+            LOGI("Failed to load isolated paper image.");
+            finalAnswers = {-1};
+        } else {
+            // Get the dimensions of the input image
+            int height = input.rows;
+            int width = input.cols;
 
-        for (int col = 0; col < 4; col++) {
-            string colPath = "/data/data/com.example.myapplication/files/column_" +
-                             to_string(col+1) + ".png";
-            Mat columnImg = imread(colPath, IMREAD_GRAYSCALE);
+            // Crop 29% from the top, 10% from the bottom, and 5% from the left and right
+            int cropTop = static_cast<int>(height * 0.29);  // 29% of the height
+            int cropBottom = static_cast<int>(height * 0.10);  // 10% of the height
+            int cropLeft = static_cast<int>(width * 0.04);  // 5% of the width
+            int cropRight = static_cast<int>(width * 0.05);  // 5% of the width
 
-            if (columnImg.empty()) {
-                LOGE("Failed to load column %d", col+1);
-                continue;
+            // Define the region of interest (ROI)
+            Rect roi(cropLeft, cropTop, width - cropLeft - cropRight, height - cropTop - cropBottom);  // Crop top, bottom, and sides
+
+            // Apply the cropping
+            Mat croppedImage = input(roi);
+
+            // Process the cropped image
+            Mat gray, blurred, binary;
+            cvtColor(croppedImage, gray, COLOR_BGR2GRAY);  // Convert cropped paper to grayscale
+
+            // Apply Gaussian blur to reduce noise and enhance edges (for clearer detection)
+            GaussianBlur(gray, blurred, Size(5, 5), 0);
+
+            // Perform adaptive thresholding to improve clarity for edge detection
+            adaptiveThreshold(blurred, binary, 255, ADAPTIVE_THRESH_GAUSSIAN_C,
+                                      THRESH_BINARY, 11, 2);  // Using adaptive thresholding for better bubble detection
+
+            // Process the binary image
+            binary = preprocessForOMR(binary);  // Additional preprocessing if needed
+
+            QuestionBubbles qb = processColumns(binary);
+
+            for (int col = 0; col < 4; col++) {
+                string colPath = "/data/data/com.example.myapplication/files/column_" +
+                                 to_string(col + 1) + ".png";
+                Mat columnImg = imread(colPath, IMREAD_GRAYSCALE);
+
+                if (columnImg.empty()) {
+                    LOGE("Failed to load column %d", col + 1);
+                    continue;
+                }
+
+                vector<Rect> columnBubbles = detectBubbles(columnImg);
+                columnBubbles = filterDuplicates(columnBubbles, 15.0);
+
+                auto [answers, selected] = analyzeColumn(columnImg, col);
+
+                generateMarkedImage(columnImg, columnBubbles, selected, col);
+
+                finalAnswers.insert(finalAnswers.end(), answers.begin(), answers.end());
             }
-
-            vector<Rect> columnBubbles = detectBubbles(columnImg);
-            columnBubbles = filterDuplicates(columnBubbles, 15.0);
-
-            auto [answers, selected] = analyzeColumn(columnImg, col);
-
-            generateMarkedImage(columnImg, columnBubbles, selected, col);
-
-            finalAnswers.insert(finalAnswers.end(), answers.begin(), answers.end());
         }
     }
     catch (const Exception& e) {

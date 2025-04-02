@@ -11,17 +11,15 @@
         android:layout_height="match_parent"
         android:visibility="visible" />
 
-    <!-- ImageView for static processing -->
-
-    <!-- Buttons -->
-
+    <!-- ImageView for displaying captured image -->
     <ImageView
         android:id="@+id/imageView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="fitCenter"
-        android:visibility="visible" />
+        android:visibility="gone" /> <!-- Make it gone initially to avoid overlap -->
 
+    <!-- Buttons at the bottom -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -36,12 +34,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Capture" />
-
-        <Button
-            android:id="@+id/btnSelect"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Gallery" />
 
         <Button
             android:id="@+id/btnProcess"

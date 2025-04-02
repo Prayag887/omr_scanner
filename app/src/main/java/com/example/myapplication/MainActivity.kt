@@ -26,7 +26,10 @@ import org.opencv.core.Core
 import org.opencv.core.Mat
 import org.opencv.core.MatOfPoint
 import org.opencv.core.MatOfPoint2f
+import org.opencv.core.Point
 import org.opencv.core.Scalar
+import org.opencv.core.Size
+import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
 import java.io.File
 import java.text.SimpleDateFormat
@@ -36,7 +39,6 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
     private lateinit var imageView: ImageView
     private lateinit var cameraView: JavaCameraView
     private lateinit var btnCapture: Button
-    private lateinit var btnSelect: Button
     private lateinit var btnProcess: Button
     private lateinit var btnToggleCamera: Button
 
@@ -89,7 +91,6 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         imageView = findViewById(R.id.imageView)
         cameraView = findViewById(R.id.camera_view)
         btnCapture = findViewById(R.id.btnCapture)
-        btnSelect = findViewById(R.id.btnSelect)
         btnProcess = findViewById(R.id.btnProcess)
         btnToggleCamera = findViewById(R.id.btnToggleCamera)
 
@@ -97,7 +98,6 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         cameraView.visibility = View.GONE
 
         btnCapture.setOnClickListener { handleCaptureClick() }
-        btnSelect.setOnClickListener { openGallery() }
         btnProcess.setOnClickListener { processImage() }
         btnToggleCamera.setOnClickListener { toggleLiveMode() }
 
@@ -143,7 +143,6 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
             cameraView.disableView()
             cameraView.visibility = View.GONE
             imageView.visibility = View.VISIBLE
-            btnSelect.isEnabled = true
             btnProcess.visibility = if (selectedBitmap != null) View.VISIBLE else View.GONE
             btnCapture.text = "Capture"
         } else {
@@ -156,7 +155,6 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
             isLiveMode = true
             imageView.visibility = View.GONE
             cameraView.visibility = View.VISIBLE
-            btnSelect.isEnabled = false
             btnProcess.visibility = View.GONE
             btnCapture.text = "Capture Frame"
             if (isOpenCVLoaded) {
@@ -229,42 +227,61 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
             // Find contours
             val contours = ArrayList<MatOfPoint>()
             val hierarchy = Mat()
-            Imgproc.findContours(
-                edges,
-                contours,
-                hierarchy,
-                Imgproc.RETR_EXTERNAL,
-                Imgproc.CHAIN_APPROX_SIMPLE
-            )
+            Imgproc.findContours(edges, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE)
 
-            // Reset counter for circular contours
-            circularContourCount = 0
+            var largestContour: MatOfPoint? = null
+            var maxArea = 0.0
 
+            // Find the largest quadrilateral contour (paper)
             for (contour in contours) {
-                val contourArea = Imgproc.contourArea(contour)
+                val area = Imgproc.contourArea(contour)
+                val approx = MatOfPoint2f()
+                val contour2f = MatOfPoint2f(*contour.toArray())
 
-                if (contourArea > 200.0) { // Filter small contours
-                    val perimeter = Imgproc.arcLength(MatOfPoint2f(*contour.toArray()), true)
-                    val circularity = (4 * Math.PI * contourArea) / (perimeter * perimeter)
+                // Approximate contour to a polygon
+                Imgproc.approxPolyDP(contour2f, approx, Imgproc.arcLength(contour2f, true) * 0.02, true)
 
-                    if (circularity > 0.7) { // Threshold for circular shapes
-                        circularContourCount++ // Increment counter
-
-                        Imgproc.drawContours(
-                            rotatedFrame,
-                            listOf(contour),
-                            -1,
-                            Scalar(0.0, 255.0, 0.0, 255.0), // Green color
-                            2
-                        )
-                    }
+                if (area > maxArea && approx.total() == 4L) { // Ensure 4 points (rectangular)
+                    maxArea = area
+                    largestContour = MatOfPoint(*approx.toArray())
                 }
             }
 
-            // Check if exactly 4 circular contours are detected
-//            detected = (circularContourCount == 4)
-            detected = true
-            Log.d(TAG, "Detected Status: $detected, Circular Contour Count: $circularContourCount")
+            if (largestContour != null) {
+                // Draw the detected paper contour in blue
+                Imgproc.drawContours(rotatedFrame, listOf(largestContour), -1, Scalar(255.0, 0.0, 0.0, 255.0), 3)
+
+                // Get the 4 points of the detected paper
+                val points = largestContour.toArray().sortedBy { it.y } // Sort by Y-coordinates
+
+                if (points.size == 4) {
+                    // Ensure correct point ordering: TL, TR, BR, BL
+                    val sortedPoints = listOf(
+                        if (points[0].x < points[1].x) points[0] else points[1], // Top-left
+                        if (points[0].x > points[1].x) points[0] else points[1], // Top-right
+                        if (points[2].x > points[3].x) points[2] else points[3], // Bottom-right
+                        if (points[2].x < points[3].x) points[2] else points[3]  // Bottom-left
+                    )
+
+                    // Define destination points (standard paper size)
+                    val width = 800
+                    val height = 1100
+                    val srcMat = MatOfPoint2f(*sortedPoints.toTypedArray())
+                    val dstMat = MatOfPoint2f(
+                        Point(0.0, 0.0), Point(width.toDouble(), 0.0),
+                        Point(width.toDouble(), height.toDouble()), Point(0.0, height.toDouble())
+                    )
+
+                    // Apply perspective transform
+                    val perspectiveTransform = Imgproc.getPerspectiveTransform(srcMat, dstMat)
+                    val paperWarped = Mat()
+                    Imgproc.warpPerspective(rotatedFrame, paperWarped, perspectiveTransform, Size(width.toDouble(), height.toDouble()))
+
+                    // Save the isolated paper image when detected
+                    val filePath = "/data/data/com.example.myapplication/files/paper.png"
+                    Imgcodecs.imwrite(filePath, paperWarped)
+                }
+            }
 
             // Release temporary Mats
             gray.release()
@@ -299,10 +316,6 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
             .apply { currentPhotoPath = absolutePath }
     }
 
-    private fun openGallery() {
-        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-        startActivityForResult(intent, GALLERY_REQUEST_CODE)
-    }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -373,9 +386,63 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
     }
 
     private fun processImage() {
+        // Save the isolated paper image when detected
+        val filePath = "/data/data/com.example.myapplication/files/paper.png"
+        val paperBitmap = BitmapFactory.decodeFile(filePath)
+
+        // Ensure the image is not null
+        if (paperBitmap != null) {
+            // Get the original width and height
+            val width = paperBitmap.width
+            val height = paperBitmap.height
+
+            // Set the target size for ESRGAN (512x512 as per your model)
+            val targetWidth = 512
+            val targetHeight = 512
+
+            // Resize the bitmap to the target size
+            val resizedBitmap = if (width != targetWidth || height != targetHeight) {
+                Bitmap.createScaledBitmap(paperBitmap, targetWidth, targetHeight, true)
+            } else {
+                paperBitmap
+            }
+
+            // ESRGAN Enhancement for Blur Image Correction
+            try {
+                val esrganModel = ESRGANModel(this)
+
+                // Check if the resized bitmap is valid
+                if (resizedBitmap.width <= 0 || resizedBitmap.height <= 0) {
+                    Log.e(TAG, "Resized bitmap has invalid dimensions: ${resizedBitmap.width}x${resizedBitmap.height}")
+                    return
+                }
+
+                // Enhance the image with ESRGAN
+                val enhancedBitmap = esrganModel.enhanceImage(resizedBitmap)
+
+                // Save the enhanced image back to file
+                val enhancedMat = Mat()
+                Utils.bitmapToMat(enhancedBitmap, enhancedMat)
+
+                // Save the enhanced image as paper_enhanced.png
+                val enhancedFilePath = "/data/data/com.example.myapplication/files/paper_enhanced.png"
+                Imgcodecs.imwrite(enhancedFilePath, enhancedMat)
+
+                // Clean up Mat objects to avoid memory leaks
+                enhancedMat.release()
+
+                // Log success
+                Log.d(TAG, "Enhanced image saved successfully: $enhancedFilePath")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error enhancing image: ${e.message}")
+            }
+        } else {
+            Log.e(TAG, "Failed to load paper image from file")
+        }
+
+        // Process other selectedBitmap (if needed)
         selectedBitmap?.let {
             val mat = Mat()
-            Utils.bitmapToMat(it, mat)
             Utils.bitmapToMat(it, mat)
 
             // Ensure correct number of channels before sending to native code
