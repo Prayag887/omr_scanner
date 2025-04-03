@@ -6,8 +6,11 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
-import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
 import android.view.View
 import android.widget.Button
@@ -16,12 +19,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import org.opencv.android.BaseLoaderCallback
-import org.opencv.android.CameraBridgeViewBase
-import org.opencv.android.JavaCameraView
-import org.opencv.android.LoaderCallbackInterface
-import org.opencv.android.OpenCVLoader
-import org.opencv.android.Utils
+import org.opencv.android.*
 import org.opencv.core.Core
 import org.opencv.core.Mat
 import org.opencv.core.MatOfPoint
@@ -31,10 +29,7 @@ import org.opencv.core.Scalar
 import org.opencv.core.Size
 import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.*
 
 class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListener2 {
     private lateinit var imageView: ImageView
@@ -54,8 +49,10 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
     companion object {
         private const val TAG = "MainActivity"
         private const val CAMERA_REQUEST_CODE = 100
+        private const val GALLERY_REQUEST_CODE = 200
         private const val CAMERA_PERMISSION_REQUEST_CODE = 300
         private const val MARKER_NAME = "omr_marker.jpg"
+
     }
 
     private external fun processOMR(matAddrInput: Long): IntArray
@@ -66,7 +63,7 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
                 LoaderCallbackInterface.SUCCESS -> {
                     Log.i(TAG, "OpenCV loaded successfully")
                     isOpenCVLoaded = true
-                    btnProcess.isEnabled = selectedBitmap != null
+                    btnProcess.isEnabled = true // here selectedBitmap != null
                     cameraView.setCameraPermissionGranted()
                     cameraView.setCvCameraViewListener(this@MainActivity)
                 }
@@ -78,7 +75,7 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
                         Toast.LENGTH_LONG
                     ).show()
                     isOpenCVLoaded = false
-                    btnProcess.isEnabled = false
+                    btnProcess.isEnabled =  true //here false
                 }
             }
         }
@@ -94,7 +91,7 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         btnProcess = findViewById(R.id.btnProcess)
         btnToggleCamera = findViewById(R.id.btnToggleCamera)
 
-        btnProcess.isEnabled = false
+        btnProcess.isEnabled = true //here
         cameraView.visibility = View.GONE
 
         btnCapture.setOnClickListener { handleCaptureClick() }
@@ -118,6 +115,9 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
                 checkMarkerAndDisplay(selectedBitmap)
                 toggleLiveMode()
             }
+        } else {
+            val intent = Intent(this, DocumentScannerActivity::class.java)
+            startActivity(intent)
         }
     }
 
@@ -295,18 +295,16 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
     }
 
 
-    private fun createImageFile(): File {
-        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-        val storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES)
-        return File.createTempFile("JPEG_${timeStamp}_", ".jpg", storageDir)
-            .apply { currentPhotoPath = absolutePath }
-    }
-
-
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (resultCode == Activity.RESULT_OK) {
             when (requestCode) {
+                GALLERY_REQUEST_CODE -> {
+                    data?.data?.let { uri ->
+                        selectedBitmap = loadBitmapFromUri(uri)
+                        checkMarkerAndDisplay(selectedBitmap)
+                    }
+                }
                 CAMERA_REQUEST_CODE -> {
                     currentPhotoPath?.let { path ->
                         val bitmap = BitmapFactory.decodeFile(path)
@@ -318,6 +316,13 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         }
     }
 
+    private fun loadBitmapFromUri(uri: Uri): Bitmap? {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            ImageDecoder.decodeBitmap(ImageDecoder.createSource(contentResolver, uri))
+        } else {
+            MediaStore.Images.Media.getBitmap(contentResolver, uri)
+        }
+    }
 
     private fun checkMarkerAndDisplay(bitmap: Bitmap?) {
         bitmap?.let {
@@ -325,29 +330,20 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
             Utils.bitmapToMat(it.copy(Bitmap.Config.ARGB_8888, true), mat)
             Imgproc.cvtColor(mat, mat, Imgproc.COLOR_RGB2BGR)
 
-            // Fetch marker file from DCIM
-            val markerFile = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), MARKER_NAME)
-
-            Log.d(TAG, "Looking for marker file at: ${markerFile.absolutePath}")
-
-            if (!markerFile.exists()) {
-                Log.e(TAG, "Marker file not found at ${markerFile.absolutePath}")
-                Toast.makeText(this, "Marker file not found at ${markerFile.absolutePath}", Toast.LENGTH_LONG).show()
-                return
-            }
-
-            Log.d(TAG, "Marker file found at: ${markerFile.absolutePath}")
-
             // Detect marker and update image
             if (true) {
                 // Convert modified Mat back to Bitmap
                 val resultBitmap = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888)
                 Utils.matToBitmap(mat, resultBitmap)
 
-                // Display processed image
+// Display processed image
                 imageView.setImageBitmap(resultBitmap)
                 btnProcess.visibility = View.VISIBLE
-                btnProcess.isEnabled = isOpenCVLoaded
+                btnProcess.isEnabled = true //here (OpenCVLoaded)
+
+                val filePath = "/data/data/com.example.myapplication/files/paper.png"
+                Imgcodecs.imwrite(filePath, mat)
+
             } else {
                 Log.e(TAG, "Marker not detected")
                 Toast.makeText(this, "Marker not found. Cannot use image.", Toast.LENGTH_LONG).show()
@@ -379,42 +375,12 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
             } else {
                 paperBitmap
             }
-
-            // ESRGAN Enhancement for Blur Image Correction
-            try {
-                val esrganModel = ESRGANModel(this)
-
-                // Check if the resized bitmap is valid
-                if (resizedBitmap.width <= 0 || resizedBitmap.height <= 0) {
-                    Log.e(TAG, "Resized bitmap has invalid dimensions: ${resizedBitmap.width}x${resizedBitmap.height}")
-                    return
-                }
-
-                // Enhance the image with ESRGAN
-                val enhancedBitmap = esrganModel.enhanceImage(resizedBitmap)
-
-                // Save the enhanced image back to file
-                val enhancedMat = Mat()
-                Utils.bitmapToMat(enhancedBitmap, enhancedMat)
-
-                // Save the enhanced image as paper_enhanced.png
-                val enhancedFilePath = "/data/data/com.example.myapplication/files/paper_enhanced.png"
-                Imgcodecs.imwrite(enhancedFilePath, enhancedMat)
-
-                // Clean up Mat objects to avoid memory leaks
-                enhancedMat.release()
-
-                // Log success
-                Log.d(TAG, "Enhanced image saved successfully: $enhancedFilePath")
-            } catch (e: Exception) {
-                Log.e(TAG, "Error enhancing image: ${e.message}")
-            }
         } else {
             Log.e(TAG, "Failed to load paper image from file")
         }
 
         // Process other selectedBitmap (if needed)
-        selectedBitmap?.let {
+        paperBitmap?.let {
             val mat = Mat()
             Utils.bitmapToMat(it, mat)
 

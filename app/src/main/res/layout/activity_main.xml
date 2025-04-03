@@ -4,12 +4,13 @@
     android:layout_height="match_parent"
     android:background="#000">
 
-    <!-- OpenCV Camera View -->
+    <!-- OpenCV Camera View taking full screen -->
     <org.opencv.android.JavaCameraView
         android:id="@+id/camera_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="visible" />
+        android:visibility="visible"
+        android:scaleType="fitXY" />
 
     <!-- ImageView for displaying captured image -->
     <ImageView
@@ -17,16 +18,16 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="fitCenter"
-        android:visibility="gone" /> <!-- Make it gone initially to avoid overlap -->
+        android:visibility="gone" />
 
-    <!-- Buttons at the bottom -->
+    <!-- Buttons overlay at the bottom with semi-transparent background -->
     <LinearLayout
+        android:id="@+id/buttonLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:layout_alignParentBottom="true"
         android:gravity="center"
-        android:padding="10dp"
         android:background="#80000000">
 
         <Button

@@ -13,12 +13,15 @@ using namespace cv;
 using namespace std;
 
 const int OPTIONS_PER_QUESTION = 4;
-const double SELECTION_THRESHOLD = 0.6;
-const int MIN_BUBBLE_AREA = 50;
-const int MAX_BUBBLE_AREA = 1000;
-const int MIN_BUBBLE_DIMENSION = 10;
-const int MAX_BUBBLE_DIMENSION = 50;
+const double SELECTION_THRESHOLD = 0.5;
+const int MIN_BUBBLE_AREA = 100;
+const int MAX_BUBBLE_AREA = 2000;
+const int MIN_BUBBLE_DIMENSION = 25;
+const int MAX_BUBBLE_DIMENSION = 100;
 const int COLUMN_PADDING = 10;
+
+// this is for row grouping
+const int VERTICAL_THRESHOLD = 15;  //9653
 
 struct QuestionBubbles {
     vector<Rect> options;
@@ -28,24 +31,13 @@ struct QuestionBubbles {
 
 
 Mat preprocessForOMR(Mat& gray) {
-    Mat binary, normalized;
+    Mat binary;
+    GaussianBlur(gray, gray, Size(5, 5), 0);
+    threshold(gray, binary, 120, 255, THRESH_BINARY_INV);
 
-    // Normalize brightness variations to minimize shadow effects
-    Mat floatGray;
-    gray.convertTo(floatGray, CV_32F);  // Convert to float for precise calculations
-    Mat meanMat;
-    blur(floatGray, meanMat, Size(25, 25));  // Local mean (smooth over a large area)
-    normalized = floatGray - meanMat;  // Subtract local mean to remove global brightness
-    normalize(normalized, normalized, 0, 255, NORM_MINMAX, CV_8U);  // Scale back to [0, 255]
 
-    // Apply Gaussian Blur to reduce noise
-    GaussianBlur(normalized, normalized, Size(3, 3), 0);
-
-    // Apply Adaptive Thresholding (similar to Sauvola)
-    adaptiveThreshold(normalized, binary, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY_INV, 15, 5);
-
-    string colPath = "/data/data/com.example.myapplication/files/binary.png";
-    imwrite(colPath, binary);
+    string a_binaryPath = "/data/data/com.example.myapplication/files/binary.png";  // Fixed path to correctly indicate binary
+    imwrite(a_binaryPath, binary);
 
     return binary;
 }
@@ -99,7 +91,6 @@ vector<vector<Rect>> organizeBubblesByQuestion(vector<Rect>& bubbles) {
         return (a.y == b.y) ? (a.x < b.x) : (a.y < b.y);
     });
 
-    const int VERTICAL_THRESHOLD = 15;
     for (const auto& bubble : bubbles) {
         bool added = false;
 
@@ -342,17 +333,43 @@ Java_com_example_myapplication_MainActivity_processOMR(JNIEnv* env, jobject, jlo
 
             // Apply the cropping
             Mat croppedImage = input(roi);
+            string cropPath = "/data/data/com.example.myapplication/files/cropped.png";
+            imwrite(cropPath, croppedImage);
 
             // Process the cropped image
             Mat gray, blurred, binary;
-            cvtColor(croppedImage, gray, COLOR_BGR2GRAY);  // Convert cropped paper to grayscale
+
+            // MODIFIED CODE: Preserve dark regions when converting to grayscale
+            // First, identify very dark pixels in the original image
+            Mat darkMask;
+            inRange(croppedImage, Scalar(0, 0, 0), Scalar(40, 40, 40), darkMask);
+
+            // Normal grayscale conversion
+            cvtColor(croppedImage, gray, COLOR_BGR2GRAY);
+
+            // Force the originally dark regions to stay black
+            gray.setTo(0, darkMask);
+
+            string grayPath = "/data/data/com.example.myapplication/files/gray.png";
+            imwrite(grayPath, gray);
 
             // Apply Gaussian blur to reduce noise and enhance edges (for clearer detection)
             GaussianBlur(gray, blurred, Size(5, 5), 0);
 
+            // Keep dark regions dark even after blurring
+            blurred.setTo(0, darkMask);
+
+            string blurPath = "/data/data/com.example.myapplication/files/blurred.png";
+            imwrite(blurPath, blurred);
+
             // Perform adaptive thresholding to improve clarity for edge detection
-            adaptiveThreshold(blurred, binary, 255, ADAPTIVE_THRESH_GAUSSIAN_C,
-                                      THRESH_BINARY, 11, 2);  // Using adaptive thresholding for better bubble detection
+            adaptiveThreshold(blurred, binary, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, 15, 5);
+
+            // After thresholding, the darkest regions should be white (255), so invert the mask for binary image
+            binary.setTo(0, darkMask);  // Ensure darkest areas from original stay black in binary
+
+            string a_binaryPath = "/data/data/com.example.myapplication/files/abinary.png";  // Fixed path to correctly indicate binary
+            imwrite(a_binaryPath, binary);
 
             // Process the binary image
             binary = preprocessForOMR(binary);  // Additional preprocessing if needed

@@ -71,7 +71,27 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(project(":OpenCV-sdk"))
     testImplementation(libs.junit)
-    implementation ("org.tensorflow:tensorflow-lite:2.16.1")
+
+    // Latest ML Kit Document Scanner dependency
+    implementation ("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0-beta1")
+// For ML Kit base functionality
+    implementation ("com.google.mlkit:vision-common:17.3.0")
+
+    // CameraX Core Library
+    implementation ("androidx.camera:camera-core:1.4.2")
+
+    // CameraX Camera2 Implementation
+    implementation ("androidx.camera:camera-camera2:1.4.2")
+
+    // CameraX Lifecycle
+    implementation ("androidx.camera:camera-lifecycle:1.4.2")
+
+    // CameraX View for Preview
+    implementation ("androidx.camera:camera-view:1.4.2")
+
+    // Optional: For image analysis
+    implementation ("androidx.camera:camera-extensions:1.4.2")
+
 
     implementation(libs.document.scanner)
 

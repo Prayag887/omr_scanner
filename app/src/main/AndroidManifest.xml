@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-feature android:name="android.hardware.camera" />
+    <uses-feature android:name="android.hardware.camera" android:required="true"/>
     <uses-feature android:name="android.hardware.camera.autofocus"
         android:required="false" />
 
@@ -29,6 +29,11 @@
 
         <activity
             android:name=".ResultActivity"
+            android:exported="false">
+        </activity>
+
+        <activity
+            android:name=".DocumentScannerActivity"
             android:exported="false">
         </activity>
 
