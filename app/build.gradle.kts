@@ -74,7 +74,7 @@ dependencies {
     // Latest ML Kit Document Scanner dependency
 //    implementation ("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0-beta1")
 
-// For ML Kit base functionality
+ // For ML Kit base functionality
     implementation ("com.google.mlkit:vision-common:17.3.0")
 
     // CameraX Core Library
