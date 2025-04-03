@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+./OpenCV-sdk/build/
+/OpenCV-sdk/build/
+OpenCV-sdk/build/**

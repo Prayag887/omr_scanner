@@ -34,7 +34,7 @@ android {
             packagingOptions {
                 doNotStrip '**/*.so'  // Controlled by OpenCV CMake scripts
             }
-            minifyEnabled true // change to false
+            minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
     }
