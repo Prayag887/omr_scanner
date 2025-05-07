@@ -29,6 +29,7 @@ import org.opencv.core.Scalar
 import org.opencv.core.Size
 import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
+import java.io.File
 import java.util.*
 
 class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListener2 {
@@ -55,7 +56,6 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
 
     }
 
-    private external fun processOMR(matAddrInput: Long): IntArray
 
     private val loaderCallback = object : BaseLoaderCallback(this) {
         override fun onManagerConnected(status: Int) {
@@ -67,6 +67,7 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
                     cameraView.setCameraPermissionGranted()
                     cameraView.setCvCameraViewListener(this@MainActivity)
                 }
+
                 else -> {
                     super.onManagerConnected(status)
                     Toast.makeText(
@@ -75,7 +76,7 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
                         Toast.LENGTH_LONG
                     ).show()
                     isOpenCVLoaded = false
-                    btnProcess.isEnabled =  true //here false
+                    btnProcess.isEnabled = true //here false
                 }
             }
         }
@@ -85,7 +86,6 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        imageView = findViewById(R.id.imageView)
         cameraView = findViewById(R.id.camera_view)
         btnCapture = findViewById(R.id.btnCapture)
         btnProcess = findViewById(R.id.btnProcess)
@@ -95,7 +95,11 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         cameraView.visibility = View.GONE
 
         btnCapture.setOnClickListener { handleCaptureClick() }
-        btnProcess.setOnClickListener { processImage() }
+        btnProcess.setOnClickListener {
+            val intent = Intent(this, ResultActivity::class.java)
+            intent.putExtra("image_path", "/data/data/com.example.myapplication/files/paper.png")
+            startActivity(intent)
+        }
         btnToggleCamera.setOnClickListener { toggleLiveMode() }
 
         try {
@@ -103,7 +107,19 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
             Log.d(TAG, "Native library loaded successfully")
         } catch (e: UnsatisfiedLinkError) {
             Log.e(TAG, "Failed to load native library", e)
-            Toast.makeText(this, "Failed to load native library: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Failed to load native library: ${e.message}", Toast.LENGTH_LONG)
+                .show()
+        }
+        //to show the latest paper image in the home screen
+        val file = File(filesDir, "paper.png")
+        val imageView = findViewById<ImageView>(R.id.previewOmrImage)
+
+        if (file.exists()) {
+            val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+            imageView.setImageBitmap(bitmap)
+            imageView.visibility = View.VISIBLE
+        } else {
+            imageView.visibility = View.GONE
         }
     }
 
@@ -116,10 +132,43 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
                 toggleLiveMode()
             }
         } else {
+            // Set up the callback before launching scanner activity
+            DocumentScannerActivity.scannerCallback = object : DocumentScannerCallback {
+                override fun onDocumentScanned(success: Boolean, filePath: String?) {
+                    runOnUiThread {
+                        if (success && filePath != null) {
+                            // Show success toast
+                            Toast.makeText(
+                                this@MainActivity,
+                                "Image captured successfully! You can process it now.",
+                                Toast.LENGTH_LONG
+                            ).show()
+
+                            // Refresh the image preview
+                            val capturedBitmap = BitmapFactory.decodeFile(filePath)
+                            val imageView = findViewById<ImageView>(R.id.previewOmrImage)
+                            imageView.setImageBitmap(capturedBitmap)
+                            imageView.visibility = View.VISIBLE
+                            btnProcess.visibility = View.VISIBLE
+                            btnProcess.isEnabled = true
+                        } else {
+                            // Only show cancellation message if scan failed or was canceled
+                            Toast.makeText(
+                                this@MainActivity,
+                                "Document scanning canceled",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                }
+            }
+
+            // Launch the document scanner activity
             val intent = Intent(this, DocumentScannerActivity::class.java)
             startActivity(intent)
         }
     }
+
 
     private fun rotateBitmap(bitmap: Bitmap?, degrees: Float): Bitmap? {
         val matrix = android.graphics.Matrix()
@@ -145,8 +194,16 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
             btnCapture.text = "Capture"
         } else {
             // Check camera permission
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), CAMERA_PERMISSION_REQUEST_CODE)
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.CAMERA
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.CAMERA),
+                    CAMERA_PERMISSION_REQUEST_CODE
+                )
                 return
             }
             // Switch to live mode
@@ -163,28 +220,56 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         }
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         when (requestCode) {
             CAMERA_PERMISSION_REQUEST_CODE -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     toggleLiveMode()
                 } else {
-                    Toast.makeText(this, "Camera permission required for live mode", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this,
+                        "Camera permission required for live mode",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         }
     }
 
+    // Add a new method to refresh the UI after returning to MainActivity
     override fun onResume() {
         super.onResume()
+
+        // Initialize OpenCV
         if (!OpenCVLoader.initDebug()) {
             OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, this, loaderCallback)
         } else {
             loaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS)
         }
+
+        // Enable camera if in live mode
         if (isLiveMode && isOpenCVLoaded) {
             cameraView.enableView()
+        }
+
+        // Check for the scanned document file and update UI if it exists
+        val file = File(filesDir, "paper.png")
+        val imageView = findViewById<ImageView>(R.id.previewOmrImage)
+
+        if (file.exists()) {
+            val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+            imageView.setImageBitmap(bitmap)
+            imageView.visibility = View.VISIBLE
+            btnProcess.visibility = View.VISIBLE
+            btnProcess.isEnabled = isOpenCVLoaded
+        } else {
+            imageView.visibility = View.GONE
+            btnProcess.visibility = View.GONE
         }
     }
 
@@ -225,7 +310,13 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
             // Find contours
             val contours = ArrayList<MatOfPoint>()
             val hierarchy = Mat()
-            Imgproc.findContours(edges, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE)
+            Imgproc.findContours(
+                edges,
+                contours,
+                hierarchy,
+                Imgproc.RETR_EXTERNAL,
+                Imgproc.CHAIN_APPROX_SIMPLE
+            )
 
             var largestContour: MatOfPoint? = null
             var maxArea = 0.0
@@ -237,7 +328,12 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
                 val contour2f = MatOfPoint2f(*contour.toArray())
 
                 // Approximate contour to a polygon
-                Imgproc.approxPolyDP(contour2f, approx, Imgproc.arcLength(contour2f, true) * 0.02, true)
+                Imgproc.approxPolyDP(
+                    contour2f,
+                    approx,
+                    Imgproc.arcLength(contour2f, true) * 0.02,
+                    true
+                )
 
                 if (area > maxArea && approx.total() == 4L) { // Ensure 4 points (rectangular)
                     maxArea = area
@@ -247,7 +343,13 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
 
             if (largestContour != null) {
                 // Draw the detected paper contour in blue
-                Imgproc.drawContours(rotatedFrame, listOf(largestContour), -1, Scalar(255.0, 0.0, 0.0, 255.0), 3)
+                Imgproc.drawContours(
+                    rotatedFrame,
+                    listOf(largestContour),
+                    -1,
+                    Scalar(255.0, 0.0, 0.0, 255.0),
+                    3
+                )
 
                 // Get the 4 points of the detected paper
                 val points = largestContour.toArray().sortedBy { it.y } // Sort by Y-coordinates
@@ -273,7 +375,12 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
                     // Apply perspective transform
                     val perspectiveTransform = Imgproc.getPerspectiveTransform(srcMat, dstMat)
                     val paperWarped = Mat()
-                    Imgproc.warpPerspective(rotatedFrame, paperWarped, perspectiveTransform, Size(width.toDouble(), height.toDouble()))
+                    Imgproc.warpPerspective(
+                        rotatedFrame,
+                        paperWarped,
+                        perspectiveTransform,
+                        Size(width.toDouble(), height.toDouble())
+                    )
 
                     // Save the isolated paper image when detected
                     val filePath = "/data/data/com.example.myapplication/files/paper.png"
@@ -305,6 +412,7 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
                         checkMarkerAndDisplay(selectedBitmap)
                     }
                 }
+
                 CAMERA_REQUEST_CODE -> {
                     currentPhotoPath?.let { path ->
                         val bitmap = BitmapFactory.decodeFile(path)
@@ -333,10 +441,10 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
             // Detect marker and update image
             if (true) {
                 // Convert modified Mat back to Bitmap
-                val resultBitmap = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888)
+                val resultBitmap =
+                    Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888)
                 Utils.matToBitmap(mat, resultBitmap)
-
-// Display processed image
+                // Display processed image
                 imageView.setImageBitmap(resultBitmap)
                 btnProcess.visibility = View.VISIBLE
                 btnProcess.isEnabled = true //here (OpenCVLoaded)
@@ -346,78 +454,12 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
 
             } else {
                 Log.e(TAG, "Marker not detected")
-                Toast.makeText(this, "Marker not found. Cannot use image.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Marker not found. Cannot use image.", Toast.LENGTH_LONG)
+                    .show()
                 selectedBitmap = null
                 imageView.setImageBitmap(null)
                 btnProcess.visibility = View.GONE
             }
-        }
-    }
-
-    private fun processImage() {
-        // Save the isolated paper image when detected
-        val filePath = "/data/data/com.example.myapplication/files/paper.png"
-        val paperBitmap = BitmapFactory.decodeFile(filePath)
-
-        // Ensure the image is not null
-        if (paperBitmap != null) {
-            // Get the original width and height
-            val width = paperBitmap.width
-            val height = paperBitmap.height
-
-            // Set the target size for ESRGAN (512x512 as per your model)
-            val targetWidth = 512
-            val targetHeight = 512
-
-            // Resize the bitmap to the target size
-            val resizedBitmap = if (width != targetWidth || height != targetHeight) {
-                Bitmap.createScaledBitmap(paperBitmap, targetWidth, targetHeight, true)
-            } else {
-                paperBitmap
-            }
-        } else {
-            Log.e(TAG, "Failed to load paper image from file")
-        }
-
-        // Process other selectedBitmap (if needed)
-        paperBitmap?.let {
-            val mat = Mat()
-            Utils.bitmapToMat(it, mat)
-
-            // Ensure correct number of channels before sending to native code
-            var processedMat = Mat()
-            if (mat.channels() == 4) {
-                Imgproc.cvtColor(mat, processedMat, Imgproc.COLOR_RGBA2RGB) // Remove Alpha channel
-            } else {
-                processedMat = mat.clone()
-            }
-
-            // Send Mat address to native function
-            val resultArray = processOMR(processedMat.nativeObjAddr)
-
-            // Convert resultArray to an Intent Extra
-            val intent = Intent(this, ResultActivity::class.java).apply {
-                putExtra("omr_results", resultArray)
-            }
-
-            // Start the ResultActivity
-            startActivity(intent)
-
-            Log.d(TAG, "OMR Result: ${resultArray.joinToString(", ")}")
-
-            // The C++ code now draws contours on the processedMat directly
-            // Display the processed image with contours
-            val resultBitmap = Bitmap.createBitmap(processedMat.cols(), processedMat.rows(), Bitmap.Config.ARGB_8888)
-            Utils.matToBitmap(processedMat, resultBitmap)
-
-            runOnUiThread {
-                imageView.setImageBitmap(resultBitmap)
-                Toast.makeText(this, "OMR processing completed", Toast.LENGTH_SHORT).show()
-            }
-
-            // Cleanup
-            mat.release()
-            processedMat.release()
         }
     }
 }

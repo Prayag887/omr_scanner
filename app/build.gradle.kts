@@ -96,4 +96,10 @@ dependencies {
     implementation(libs.document.scanner)
 
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar"))))
+
+    //shimmer effect for the ui
+    implementation ("com.facebook.shimmer:shimmer:0.5.0")
+
+    implementation ("com.google.android.material:material:1.12.0")
+
 }

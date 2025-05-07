@@ -21,13 +21,13 @@ import java.io.InputStream
 class DocumentScannerActivity : ComponentActivity() {
 
     private lateinit var scannerLauncher: ActivityResultLauncher<IntentSenderRequest>
+    private var resultProcessed = false  // Flag to track if result was already processed
 
-    // Define a callback interface to return the Bitmap
-    interface ImageScanCallback {
-        fun onImageScanned(bitmap: Bitmap)
+
+    // Add a companion object to hold the callback instance
+    companion object {
+        var scannerCallback: DocumentScannerCallback? = null
     }
-
-    var imageScanCallback: ImageScanCallback? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,15 +45,23 @@ class DocumentScannerActivity : ComponentActivity() {
 
         // Register an ActivityResultCallback to handle the scan results
         scannerLauncher = registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
+            resultProcessed = true // Mark that we've processed a result
             if (result.resultCode == RESULT_OK) {
                 val scanningResult = GmsDocumentScanningResult.fromActivityResultIntent(result.data)
                 scanningResult?.pages?.let { pages ->
                     for (page in pages) {
                         val imageUri = page.getImageUri()
-                        // Save the scanned image to a file
-                        val bitmap = saveImageToFile(imageUri)
-
+                        val filePath = saveImageToFile(imageUri)
+                        // Notify success through callback
+                        if (filePath != null) {
+                            scannerCallback?.onDocumentScanned(true, filePath.toString())
+                        } else {
+                            scannerCallback?.onDocumentScanned(false)
+                        }
                     }
+                }?: run {
+                    // No pages scanned
+                    scannerCallback?.onDocumentScanned(false)
                 }
 
                 scanningResult?.pdf?.let { pdf ->
@@ -62,8 +70,12 @@ class DocumentScannerActivity : ComponentActivity() {
                     // Handle PDF saving or displaying
                 }
             } else {
-                // Handle failure case
+                // Handle cancel/failure case - notify through callback
+                scannerCallback?.onDocumentScanned(false)
+
             }
+            scannerCallback = null
+            finish()
         }
 
         // Launch the document scanner
@@ -73,12 +85,16 @@ class DocumentScannerActivity : ComponentActivity() {
             }
             .addOnFailureListener {
                 // Handle failure in scanning initialization
+                resultProcessed = true
+                scannerCallback?.onDocumentScanned(false)
+                scannerCallback = null //clear callback reference
+                finish()
             }
     }
 
     // Save image to file and return the Bitmap
-    private fun saveImageToFile(imageUri: Uri) {
-         try {
+    private fun saveImageToFile(imageUri: Uri):String? {
+        try {
             val contentResolver: ContentResolver = contentResolver
             val inputStream: InputStream = contentResolver.openInputStream(imageUri)!!
 
@@ -99,9 +115,11 @@ class DocumentScannerActivity : ComponentActivity() {
             // Optionally, display a message or log the successful save
             println("Image saved to ${file.absolutePath}")
             goBack()
-            // Return the bitmap
+            // Return the absolute path
+            return file.absolutePath
         } catch (e: Exception) {
             e.printStackTrace()
+            return null
         }
     }
 
@@ -111,13 +129,29 @@ class DocumentScannerActivity : ComponentActivity() {
         onBackPressed()
     }
 
-    override fun onBackPressed() {
-        // Optionally, call the callback again here before exiting the activity
-        imageScanCallback?.let {
-            val dummyBitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888) // Return a dummy bitmap if necessary
-            it.onImageScanned(dummyBitmap)
-        }
 
+    override fun onBackPressed() {
+        // Only notify if no result was processed yet
+        if (!resultProcessed) {
+            resultProcessed = true
+            scannerCallback?.onDocumentScanned(false)
+            scannerCallback = null  // Clear callback reference
+        }
         super.onBackPressed()
     }
+
+    override fun onDestroy() {
+        // Only notify if no result was processed yet
+        if (!resultProcessed) {
+            resultProcessed = true
+            scannerCallback?.onDocumentScanned(false)
+            scannerCallback = null  // Clear callback reference
+        }
+        super.onDestroy()
+    }
+}
+
+// Add a callback interface for document scanning results
+interface DocumentScannerCallback {
+    fun onDocumentScanned(success: Boolean, filePath: String? = null)
 }

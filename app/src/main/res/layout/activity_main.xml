@@ -4,49 +4,166 @@
     android:layout_height="match_parent"
     android:background="#000">
 
-    <!-- OpenCV Camera View taking full screen -->
-    <org.opencv.android.JavaCameraView
-        android:id="@+id/camera_view"
+    <!-- Header: OMR Scanner -->
+    <LinearLayout
+        android:id="@+id/headerLayout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="visible"
-        android:scaleType="fitXY" />
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#FEF3E2"
+        android:gravity="center"
+        android:paddingTop="32dp"
+        android:paddingBottom="16dp">
 
-    <!-- ImageView for displaying captured image -->
-    <ImageView
-        android:id="@+id/imageView"
+        <TextView
+            android:id="@+id/headerTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="OMR Scanner"
+            android:textSize="24sp"
+            android:textColor="#000000"
+            android:fontFamily="@font/manrope_extrabold"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/subText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Capture the OMR sheet, Process it and get the results"
+            android:textSize="14sp"
+            android:textColor="#000000"
+            android:fontFamily="@font/manrope_bold"
+            android:layout_marginTop="4dp"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="5dp" />
+    </LinearLayout>
+
+    <!-- Content area between header and bottom buttons -->
+    <RelativeLayout
+        android:id="@+id/middleContentLayout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scaleType="fitCenter"
-        android:visibility="gone" />
+        android:layout_height="0dp"
+        android:layout_below="@id/headerLayout"
+        android:layout_above="@id/buttonLayout">
 
-    <!-- Buttons overlay at the bottom with semi-transparent background -->
+        <!-- OpenCV Camera View -->
+        <org.opencv.android.JavaCameraView
+            android:id="@+id/camera_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitXY"
+            android:visibility="gone" />
+
+        <!-- Previous OMR Section -->
+        <LinearLayout
+            android:id="@+id/previousOmrLayout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:background="#1A1A1A"
+            android:padding="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Your Current OMR"
+                android:id="@+id/YCOID"
+                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                android:fontFamily="@font/manrope_semibold"
+                android:layout_marginBottom="8dp" />
+
+            <!-- OMR Preview Image -->
+            <ImageView
+                android:id="@+id/previewOmrImage"
+                android:layout_width="match_parent"
+                android:layout_height="400dp"
+                android:layout_margin="12dp"
+                android:scaleType="centerCrop"
+                android:visibility="gone"
+                android:background="@drawable/rounded_bg" />
+        </LinearLayout>
+    </RelativeLayout>
+
+    <!-- Bottom Buttons Section -->
     <LinearLayout
         android:id="@+id/buttonLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:layout_alignParentBottom="true"
+        android:background="#FEF3E2"
         android:gravity="center"
-        android:background="#80000000">
+        android:orientation="horizontal"
+        android:padding="8dp">
 
-        <Button
-            android:id="@+id/btnCapture"
-            android:layout_width="wrap_content"
+        <!-- Capture -->
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Capture" />
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
 
-        <Button
-            android:id="@+id/btnProcess"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Process"
-            android:enabled="false" />
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_capture" />
 
-        <Button
-            android:id="@+id/btnToggleCamera"
-            android:layout_width="wrap_content"
+            <Button
+                android:id="@+id/btnCapture"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@android:color/transparent"
+                android:fontFamily="@font/manrope_medium"
+                android:text="Capture"
+                android:textColor="#333333" />
+        </LinearLayout>
+
+        <!-- Process -->
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Live Mode" />
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_process" />
+
+            <Button
+                android:id="@+id/btnProcess"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@android:color/transparent"
+                android:enabled="false"
+                android:fontFamily="@font/manrope_medium"
+                android:text="Process"
+                android:textColor="#333333" />
+        </LinearLayout>
+
+        <!-- Live Mode -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_live" />
+
+            <Button
+                android:id="@+id/btnToggleCamera"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@android:color/transparent"
+                android:fontFamily="@font/manrope_medium"
+                android:text="Live Mode"
+                android:textColor="#333333" />
+        </LinearLayout>
     </LinearLayout>
 </RelativeLayout>
