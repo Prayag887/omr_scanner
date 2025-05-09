@@ -1,0 +1,7 @@
+#Sun Apr 06 14:26:29 NPT 2025
+base.1=C\:\\Users\\user\\AndroidStudioProjects\\MyApplication\\OpenCV-sdk\\build\\intermediates\\dex\\debugAndroidTest\\mergeProjectDexDebugAndroidTest\\0\\classes.dex
+path.1=0/classes.dex
+base.0=C\:\\Users\\user\\AndroidStudioProjects\\MyApplication\\OpenCV-sdk\\build\\intermediates\\dex\\debugAndroidTest\\mergeLibDexDebugAndroidTest\\0\\classes.dex
+renamed.1=classes2.dex
+renamed.0=classes.dex
+path.0=0/classes.dex

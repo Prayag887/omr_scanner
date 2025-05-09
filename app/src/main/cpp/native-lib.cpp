@@ -110,7 +110,6 @@ Mat preprocessForOMR(Mat& gray) {
 }
 
 
-
 vector<Rect> detectBubbles(Mat& binary) {
     vector<vector<Point>> contours;
     findContours(binary, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);

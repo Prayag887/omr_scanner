@@ -1,0 +1,7 @@
+org.opencv.OpenCV-sdk-pngs-0 C:\Users\user\AndroidStudioProjects\MyApplication\OpenCV-sdk\build\generated\res\pngs\release
+org.opencv.OpenCV-sdk-resValues-1 C:\Users\user\AndroidStudioProjects\MyApplication\OpenCV-sdk\build\generated\res\resValues\release
+org.opencv.OpenCV-sdk-mergeReleaseResources-2 C:\Users\user\AndroidStudioProjects\MyApplication\OpenCV-sdk\build\intermediates\incremental\release\mergeReleaseResources\merged.dir
+org.opencv.OpenCV-sdk-mergeReleaseResources-3 C:\Users\user\AndroidStudioProjects\MyApplication\OpenCV-sdk\build\intermediates\incremental\release\mergeReleaseResources\stripped.dir
+org.opencv.OpenCV-sdk-release-4 C:\Users\user\AndroidStudioProjects\MyApplication\OpenCV-sdk\build\intermediates\merged_res\release\mergeReleaseResources
+org.opencv.OpenCV-sdk-java-5 C:\Users\user\AndroidStudioProjects\MyApplication\OpenCV-sdk\java\res
+org.opencv.OpenCV-sdk-release-6 C:\Users\user\AndroidStudioProjects\MyApplication\OpenCV-sdk\src\release\res
