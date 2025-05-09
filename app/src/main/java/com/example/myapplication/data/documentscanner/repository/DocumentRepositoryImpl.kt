@@ -1,10 +1,10 @@
-// domain/repository/DocumentRepositoryImpl.kt
-package com.example.myapplication.domain.repository
+package com.example.myapplication.data.documentscanner.repository
 
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.util.Log
-import com.example.myapplication.domain.model.DocumentScanResult
+import com.example.myapplication.domain.documentscanner.model.DocumentScanResult
+import com.example.myapplication.domain.documentscanner.repository.DocumentRepository
 import org.koin.core.component.KoinComponent
 import org.opencv.core.Core
 import org.opencv.core.Mat

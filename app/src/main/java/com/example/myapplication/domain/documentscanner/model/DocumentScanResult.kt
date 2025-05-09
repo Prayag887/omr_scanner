@@ -1,4 +1,4 @@
-package com.example.myapplication.domain.model
+package com.example.myapplication.domain.documentscanner.model
 
 import android.graphics.Bitmap
 

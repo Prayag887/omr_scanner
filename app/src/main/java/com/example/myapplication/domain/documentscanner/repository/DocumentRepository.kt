@@ -1,7 +1,6 @@
-package com.example.myapplication.domain.repository
+package com.example.myapplication.domain.documentscanner.repository
 
-import android.graphics.Bitmap
-import com.example.myapplication.domain.model.DocumentScanResult
+import com.example.myapplication.domain.documentscanner.model.DocumentScanResult
 import org.opencv.core.Mat
 
 interface DocumentRepository {

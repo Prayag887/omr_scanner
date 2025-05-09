@@ -1,12 +1,11 @@
 package com.example.myapplication.presentation.main
 
 import android.graphics.Bitmap
-import android.net.Uri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.example.myapplication.domain.model.DocumentScanResult
-import com.example.myapplication.domain.repository.DocumentRepository
+import com.example.myapplication.domain.documentscanner.model.DocumentScanResult
+import com.example.myapplication.domain.documentscanner.repository.DocumentRepository
 import com.example.myapplication.utils.BitmapUtils
 import org.opencv.core.Mat
 

@@ -1,7 +1,6 @@
 package com.example.myapplication.presentation.main
 
 import android.Manifest
-import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -16,10 +15,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.myapplication.R
-import com.example.myapplication.presentation.result.ResultActivity
+import com.example.myapplication.presentation.omrresult.ResultActivity
 import com.example.myapplication.presentation.scanner.DocumentScannerActivity
 import com.example.myapplication.presentation.scanner.DocumentScannerCallback
-import com.example.myapplication.utils.OpenCVUtils
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.opencv.android.BaseLoaderCallback
 import org.opencv.android.CameraBridgeViewBase
@@ -28,7 +26,6 @@ import org.opencv.android.LoaderCallbackInterface
 import org.opencv.android.OpenCVLoader
 import org.opencv.android.Utils
 import org.opencv.core.Mat
-import java.io.File
 
 class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListener2 {
     private val viewModel: MainViewModel by viewModel()
@@ -37,7 +34,7 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
     private lateinit var cameraView: JavaCameraView
     private lateinit var btnCapture: Button
     private lateinit var btnProcess: Button
-    private lateinit var btnToggleCamera: Button
+//    private lateinit var btnToggleCamera: FloatingActionButton
 
     private var currentFrame: Mat? = null
 
@@ -86,7 +83,7 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         cameraView = findViewById(R.id.camera_view)
         btnCapture = findViewById(R.id.btnCapture)
         btnProcess = findViewById(R.id.btnProcess)
-        btnToggleCamera = findViewById(R.id.btnToggleCamera)
+//        btnToggleCamera = findViewById(R.id.btnToggleCamera)
 
         btnProcess.isEnabled = true
         cameraView.visibility = View.GONE
@@ -99,7 +96,7 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
             intent.putExtra("image_path", "${filesDir}/paper.png")
             startActivity(intent)
         }
-        btnToggleCamera.setOnClickListener { handleToggleCameraClick() }
+//        btnToggleCamera.setOnClickListener { handleToggleCameraClick() }
     }
 
     private fun loadNativeLibrary() {
