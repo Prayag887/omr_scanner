@@ -1,1 +1,28 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
 /build
+/captures
+.externalNativeBuild
+.cxx
+
+# Ignore build outputs
+/build/
+/**/build/
+*.apk
+*.aab
+*.jar
+*.so
+*.iml
+
+# Ignore OpenCV SDK build outputs
+OpenCV-sdk/build/
+
+local.properties

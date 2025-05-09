@@ -102,4 +102,10 @@ dependencies {
 
     implementation ("com.google.android.material:material:1.12.0")
 
+    implementation("io.insert-koin:koin-android:3.5.0")
+
+    implementation("io.insert-koin:koin-core:3.5.0")
+
+    testImplementation("io.insert-koin:koin-test-junit5:3.5.0")
+
 }

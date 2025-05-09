@@ -1,10 +1,8 @@
-package com.example.myapplication
+package com.example.myapplication.presentation.result
 
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
@@ -12,6 +10,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
+import com.example.myapplication.R
 import com.facebook.shimmer.ShimmerFrameLayout
 import org.opencv.android.Utils
 import org.opencv.core.Mat
