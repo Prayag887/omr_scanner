@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    id("maven-publish")
 }
 
 android {
@@ -8,11 +9,11 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.myapplication"
+//        applicationId = "com.example.myapplication"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+//        versionCode = 1
+//        versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
@@ -59,6 +60,37 @@ android {
     sourceSets {
         named("main") {
             jniLibs.srcDirs("src/main/jniLibs")
+        }
+    }
+
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+        }
+    }
+}
+
+publishing {
+    publications {
+        register<MavenPublication>("release") {
+            groupId = "com.prayag"
+            artifactId = "omr-scanner"
+            version = "0.0.1"
+
+            afterEvaluate {
+                from(components["release"])
+            }
+        }
+    }
+
+    repositories{
+        maven {
+            name = "omr_package"
+            url = uri("https://maven.pkg.github.com/Prayag887/omr_scanner")
+            credentials {
+                username = "Prayag887"
+                password = "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"
+            }
         }
     }
 }
