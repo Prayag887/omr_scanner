@@ -10,8 +10,6 @@
 .DS_Store
 /build
 /captures
-
-app/src/main/cpp/CMakeLists.txt
 .externalNativeBuild
 .cxx
 local.properties

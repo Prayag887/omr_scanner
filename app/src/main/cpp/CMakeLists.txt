@@ -3,8 +3,12 @@ project("myapplication")
 
 # Set the path to the OpenCVConfig.cmake file
 #set(OpenCV_DIR "C:/Users/user/AndroidStudioProjects/MyApplication/app/src/main/opencv/native")
-set(OpenCV_DIR "/Users/prayag/projects/omr_scanner/app/src/main/opencv/native/jni")
-set(OpenCV_CONFIG_PATH "${OpenCV_DIR}")
+# Assume CMAKE_CURRENT_LIST_DIR is the current directory of the CMakeLists.txt
+get_filename_component(PARENT_DIR "${CMAKE_CURRENT_LIST_DIR}" DIRECTORY)
+set(OpenCV_DIR "${PARENT_DIR}/opencv/native/jni")
+
+#set(OpenCV_DIR "/Users/prayag/projects/omr_scanner/app/src/main/opencv/native/jni")
+#set(OpenCV_CONFIG_PATH "${OpenCV_DIR}")
 
 # Find OpenCV
 find_package(OpenCV REQUIRED)
@@ -13,7 +17,7 @@ find_package(OpenCV REQUIRED)
 add_library(
         myapplication
         SHARED
-        /Users/prayag/projects/omr_scanner/app/src/main/cpp/native-lib.cpp
+        ${PARENT_DIR}/cpp/native-lib.cpp
 )
 
 # Include OpenCV headers
