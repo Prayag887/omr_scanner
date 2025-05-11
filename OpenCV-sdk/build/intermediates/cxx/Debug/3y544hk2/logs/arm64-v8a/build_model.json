@@ -8,9 +8,9 @@
     "triple": "aarch64-linux-android",
     "llvmTriple": "aarch64-none-linux-android"
   },
-  "cxxBuildFolder": "C:\\Users\\user\\AndroidStudioProjects\\MyApplication\\OpenCV-sdk\\.cxx\\Debug\\3y544hk2\\arm64-v8a",
-  "soFolder": "C:\\Users\\user\\AndroidStudioProjects\\MyApplication\\OpenCV-sdk\\build\\intermediates\\cxx\\Debug\\3y544hk2\\obj\\arm64-v8a",
-  "soRepublishFolder": "C:\\Users\\user\\AndroidStudioProjects\\MyApplication\\OpenCV-sdk\\build\\intermediates\\cmake\\debug\\obj\\arm64-v8a",
+  "cxxBuildFolder": "/Users/prayag/projects/omr_scanner/OpenCV-sdk/.cxx/Debug/3y544hk2/arm64-v8a",
+  "soFolder": "/Users/prayag/projects/omr_scanner/OpenCV-sdk/build/intermediates/cxx/Debug/3y544hk2/obj/arm64-v8a",
+  "soRepublishFolder": "/Users/prayag/projects/omr_scanner/OpenCV-sdk/build/intermediates/cmake/debug/obj/arm64-v8a",
   "abiPlatformVersion": 21,
   "cmake": {
     "effectiveConfiguration": {
@@ -35,16 +35,16 @@
     "implicitBuildTargetSet": [],
     "cmakeSettingsConfiguration": "android-gradle-plugin-predetermined-name",
     "module": {
-      "cxxFolder": "C:\\Users\\user\\AndroidStudioProjects\\MyApplication\\OpenCV-sdk\\.cxx",
-      "intermediatesBaseFolder": "C:\\Users\\user\\AndroidStudioProjects\\MyApplication\\OpenCV-sdk\\build\\intermediates",
-      "intermediatesFolder": "C:\\Users\\user\\AndroidStudioProjects\\MyApplication\\OpenCV-sdk\\build\\intermediates\\cxx",
+      "cxxFolder": "/Users/prayag/projects/omr_scanner/OpenCV-sdk/.cxx",
+      "intermediatesBaseFolder": "/Users/prayag/projects/omr_scanner/OpenCV-sdk/build/intermediates",
+      "intermediatesFolder": "/Users/prayag/projects/omr_scanner/OpenCV-sdk/build/intermediates/cxx",
       "gradleModulePathName": ":OpenCV-sdk",
-      "moduleRootFolder": "C:\\Users\\user\\AndroidStudioProjects\\MyApplication\\OpenCV-sdk",
-      "moduleBuildFile": "C:\\Users\\user\\AndroidStudioProjects\\MyApplication\\OpenCV-sdk\\build.gradle",
-      "makeFile": "C:\\Users\\user\\AndroidStudioProjects\\MyApplication\\OpenCV-sdk\\libcxx_helper\\CMakeLists.txt",
+      "moduleRootFolder": "/Users/prayag/projects/omr_scanner/OpenCV-sdk",
+      "moduleBuildFile": "/Users/prayag/projects/omr_scanner/OpenCV-sdk/build.gradle",
+      "makeFile": "/Users/prayag/projects/omr_scanner/OpenCV-sdk/libcxx_helper/CMakeLists.txt",
       "buildSystem": "CMAKE",
-      "ndkFolder": "C:\\Users\\user\\AppData\\Local\\Android\\Sdk\\ndk\\27.0.12077973",
-      "ndkFolderBeforeSymLinking": "C:\\Users\\user\\AppData\\Local\\Android\\Sdk\\ndk\\27.0.12077973",
+      "ndkFolder": "/Users/prayag/Library/Android/sdk/ndk/27.0.12077973",
+      "ndkFolderBeforeSymLinking": "/Users/prayag/Library/Android/sdk/ndk/27.0.12077973",
       "ndkVersion": "27.0.12077973",
       "ndkSupportedAbiList": [
         "armeabi-v7a",
@@ -134,32 +134,32 @@
           "llvmTriple": "x86_64-none-linux-android"
         }
       ],
-      "cmakeToolchainFile": "C:\\Users\\user\\AppData\\Local\\Android\\Sdk\\ndk\\27.0.12077973\\build\\cmake\\android.toolchain.cmake",
+      "cmakeToolchainFile": "/Users/prayag/Library/Android/sdk/ndk/27.0.12077973/build/cmake/android.toolchain.cmake",
       "cmake": {
-        "cmakeExe": "C:\\Users\\user\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\cmake.exe"
+        "cmakeExe": "/Users/prayag/Library/Android/sdk/cmake/3.22.1/bin/cmake"
       },
       "stlSharedObjectMap": {
         "LIBCXX_SHARED": {
-          "armeabi-v7a": "C:\\Users\\user\\AppData\\Local\\Android\\Sdk\\ndk\\27.0.12077973\\toolchains\\llvm\\prebuilt\\windows-x86_64\\sysroot\\usr\\lib\\arm-linux-androideabi\\libc++_shared.so",
-          "arm64-v8a": "C:\\Users\\user\\AppData\\Local\\Android\\Sdk\\ndk\\27.0.12077973\\toolchains\\llvm\\prebuilt\\windows-x86_64\\sysroot\\usr\\lib\\aarch64-linux-android\\libc++_shared.so",
-          "riscv64": "C:\\Users\\user\\AppData\\Local\\Android\\Sdk\\ndk\\27.0.12077973\\toolchains\\llvm\\prebuilt\\windows-x86_64\\sysroot\\usr\\lib\\riscv64-linux-android\\libc++_shared.so",
-          "x86": "C:\\Users\\user\\AppData\\Local\\Android\\Sdk\\ndk\\27.0.12077973\\toolchains\\llvm\\prebuilt\\windows-x86_64\\sysroot\\usr\\lib\\i686-linux-android\\libc++_shared.so",
-          "x86_64": "C:\\Users\\user\\AppData\\Local\\Android\\Sdk\\ndk\\27.0.12077973\\toolchains\\llvm\\prebuilt\\windows-x86_64\\sysroot\\usr\\lib\\x86_64-linux-android\\libc++_shared.so"
+          "armeabi-v7a": "/Users/prayag/Library/Android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/lib/arm-linux-androideabi/libc++_shared.so",
+          "arm64-v8a": "/Users/prayag/Library/Android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so",
+          "riscv64": "/Users/prayag/Library/Android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/lib/riscv64-linux-android/libc++_shared.so",
+          "x86": "/Users/prayag/Library/Android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/lib/i686-linux-android/libc++_shared.so",
+          "x86_64": "/Users/prayag/Library/Android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/lib/x86_64-linux-android/libc++_shared.so"
         },
         "LIBCXX_STATIC": {},
         "NONE": {},
         "SYSTEM": {}
       },
       "project": {
-        "rootBuildGradleFolder": "C:\\Users\\user\\AndroidStudioProjects\\MyApplication",
-        "sdkFolder": "C:\\Users\\user\\AppData\\Local\\Android\\Sdk",
+        "rootBuildGradleFolder": "/Users/prayag/projects/omr_scanner",
+        "sdkFolder": "/Users/prayag/Library/Android/sdk",
         "isBuildOnlyTargetAbiEnabled": true,
         "ideBuildTargetAbi": "arm64-v8a,armeabi-v7a,armeabi",
         "isCmakeBuildCohabitationEnabled": false,
         "isPrefabEnabled": false
       },
       "outputOptions": [],
-      "ninjaExe": "C:\\Users\\user\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\ninja.exe",
+      "ninjaExe": "/Users/prayag/Library/Android/sdk/cmake/3.22.1/bin/ninja",
       "hasBuildTimeInformation": true
     },
     "prefabClassPaths": [],
@@ -171,29 +171,29 @@
   "buildSettings": {
     "environmentVariables": []
   },
-  "prefabFolder": "C:\\Users\\user\\AndroidStudioProjects\\MyApplication\\OpenCV-sdk\\.cxx\\Debug\\3y544hk2\\prefab\\arm64-v8a",
+  "prefabFolder": "/Users/prayag/projects/omr_scanner/OpenCV-sdk/.cxx/Debug/3y544hk2/prefab/arm64-v8a",
   "isActiveAbi": true,
   "fullConfigurationHash": "3y544hk2o414i24465k5c2c1e6x3v56r15315r4g4k131fg1t136q944n6w",
   "fullConfigurationHashKey": "# Values used to calculate the hash in this folder name.\n# Should not depend on the absolute path of the project itself.\n#   - AGP: 8.8.0.\n#   - $NDK is the path to NDK 27.0.12077973.\n#   - $PROJECT is the path to the parent folder of the root Gradle build file.\n#   - $ABI is the ABI to be built with. The specific value doesn\u0027t contribute to the value of the hash.\n#   - $HASH is the hash value computed from this text.\n#   - $CMAKE is the path to CMake 3.22.1.\n#   - $NINJA is the path to Ninja.\n-H$PROJECT/OpenCV-sdk/libcxx_helper\n-DCMAKE_SYSTEM_NAME\u003dAndroid\n-DCMAKE_EXPORT_COMPILE_COMMANDS\u003dON\n-DCMAKE_SYSTEM_VERSION\u003d21\n-DANDROID_PLATFORM\u003dandroid-21\n-DANDROID_ABI\u003d$ABI\n-DCMAKE_ANDROID_ARCH_ABI\u003d$ABI\n-DANDROID_NDK\u003d$NDK\n-DCMAKE_ANDROID_NDK\u003d$NDK\n-DCMAKE_TOOLCHAIN_FILE\u003d$NDK/build/cmake/android.toolchain.cmake\n-DCMAKE_MAKE_PROGRAM\u003d$NINJA\n-DCMAKE_LIBRARY_OUTPUT_DIRECTORY\u003d$PROJECT/OpenCV-sdk/build/intermediates/cxx/Debug/$HASH/obj/$ABI\n-DCMAKE_RUNTIME_OUTPUT_DIRECTORY\u003d$PROJECT/OpenCV-sdk/build/intermediates/cxx/Debug/$HASH/obj/$ABI\n-DCMAKE_BUILD_TYPE\u003dDebug\n-B$PROJECT/OpenCV-sdk/.cxx/Debug/$HASH/$ABI\n-GNinja\n-DANDROID_STL\u003dc++_shared",
   "configurationArguments": [
-    "-HC:\\Users\\user\\AndroidStudioProjects\\MyApplication\\OpenCV-sdk\\libcxx_helper",
+    "-H/Users/prayag/projects/omr_scanner/OpenCV-sdk/libcxx_helper",
     "-DCMAKE_SYSTEM_NAME\u003dAndroid",
     "-DCMAKE_EXPORT_COMPILE_COMMANDS\u003dON",
     "-DCMAKE_SYSTEM_VERSION\u003d21",
     "-DANDROID_PLATFORM\u003dandroid-21",
     "-DANDROID_ABI\u003darm64-v8a",
     "-DCMAKE_ANDROID_ARCH_ABI\u003darm64-v8a",
-    "-DANDROID_NDK\u003dC:\\Users\\user\\AppData\\Local\\Android\\Sdk\\ndk\\27.0.12077973",
-    "-DCMAKE_ANDROID_NDK\u003dC:\\Users\\user\\AppData\\Local\\Android\\Sdk\\ndk\\27.0.12077973",
-    "-DCMAKE_TOOLCHAIN_FILE\u003dC:\\Users\\user\\AppData\\Local\\Android\\Sdk\\ndk\\27.0.12077973\\build\\cmake\\android.toolchain.cmake",
-    "-DCMAKE_MAKE_PROGRAM\u003dC:\\Users\\user\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\ninja.exe",
-    "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY\u003dC:\\Users\\user\\AndroidStudioProjects\\MyApplication\\OpenCV-sdk\\build\\intermediates\\cxx\\Debug\\3y544hk2\\obj\\arm64-v8a",
-    "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY\u003dC:\\Users\\user\\AndroidStudioProjects\\MyApplication\\OpenCV-sdk\\build\\intermediates\\cxx\\Debug\\3y544hk2\\obj\\arm64-v8a",
+    "-DANDROID_NDK\u003d/Users/prayag/Library/Android/sdk/ndk/27.0.12077973",
+    "-DCMAKE_ANDROID_NDK\u003d/Users/prayag/Library/Android/sdk/ndk/27.0.12077973",
+    "-DCMAKE_TOOLCHAIN_FILE\u003d/Users/prayag/Library/Android/sdk/ndk/27.0.12077973/build/cmake/android.toolchain.cmake",
+    "-DCMAKE_MAKE_PROGRAM\u003d/Users/prayag/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+    "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY\u003d/Users/prayag/projects/omr_scanner/OpenCV-sdk/build/intermediates/cxx/Debug/3y544hk2/obj/arm64-v8a",
+    "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY\u003d/Users/prayag/projects/omr_scanner/OpenCV-sdk/build/intermediates/cxx/Debug/3y544hk2/obj/arm64-v8a",
     "-DCMAKE_BUILD_TYPE\u003dDebug",
-    "-BC:\\Users\\user\\AndroidStudioProjects\\MyApplication\\OpenCV-sdk\\.cxx\\Debug\\3y544hk2\\arm64-v8a",
+    "-B/Users/prayag/projects/omr_scanner/OpenCV-sdk/.cxx/Debug/3y544hk2/arm64-v8a",
     "-GNinja",
     "-DANDROID_STL\u003dc++_shared"
   ],
-  "stlLibraryFile": "C:\\Users\\user\\AppData\\Local\\Android\\Sdk\\ndk\\27.0.12077973\\toolchains\\llvm\\prebuilt\\windows-x86_64\\sysroot\\usr\\lib\\aarch64-linux-android\\libc++_shared.so",
-  "intermediatesParentFolder": "C:\\Users\\user\\AndroidStudioProjects\\MyApplication\\OpenCV-sdk\\build\\intermediates\\cxx\\Debug\\3y544hk2"
+  "stlLibraryFile": "/Users/prayag/Library/Android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so",
+  "intermediatesParentFolder": "/Users/prayag/projects/omr_scanner/OpenCV-sdk/build/intermediates/cxx/Debug/3y544hk2"
 }

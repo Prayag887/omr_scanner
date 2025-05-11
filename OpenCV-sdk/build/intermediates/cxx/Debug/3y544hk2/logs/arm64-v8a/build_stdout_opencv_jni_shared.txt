@@ -1,2 +1,2 @@
-ninja: Entering directory `C:\Users\user\AndroidStudioProjects\MyApplication\OpenCV-sdk\.cxx\Debug\3y544hk2\arm64-v8a'
+ninja: Entering directory `/Users/prayag/projects/omr_scanner/OpenCV-sdk/.cxx/Debug/3y544hk2/arm64-v8a'
 ninja: no work to do.

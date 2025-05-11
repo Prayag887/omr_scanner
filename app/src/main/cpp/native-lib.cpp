@@ -14,14 +14,14 @@ using namespace std;
 
 const int OPTIONS_PER_QUESTION = 4;
 const double SELECTION_THRESHOLD = 0.5;
-const int MIN_BUBBLE_AREA = 100;
+const int MIN_BUBBLE_AREA = 10;
 const int MAX_BUBBLE_AREA = 2000;
-const int MIN_BUBBLE_DIMENSION = 25;
-const int MAX_BUBBLE_DIMENSION = 100;
+const int MIN_BUBBLE_DIMENSION = 15;
+const int MAX_BUBBLE_DIMENSION = 200;
 const int COLUMN_PADDING = 10;
 
 // this is for row grouping
-const int VERTICAL_THRESHOLD = 15;  //9653
+const int VERTICAL_THRESHOLD = 15;
 
 struct QuestionBubbles {
     vector<Rect> options;
@@ -32,19 +32,84 @@ struct QuestionBubbles {
 
 Mat preprocessForOMR(Mat& gray) {
     Mat binary;
-    GaussianBlur(gray, gray, Size(5, 5), 0);
-    threshold(gray, binary, 120, 255, THRESH_BINARY_INV);
+   GaussianBlur(gray, gray, Size(5, 5), 0);
+   threshold(gray, binary, 0, 255, THRESH_BINARY_INV + THRESH_OTSU);
 
+    // Create a copy for visualization
+    Mat visual = binary.clone();
+    cvtColor(visual, visual, COLOR_GRAY2BGR);  // Convert to color for debugging
 
-    string a_binaryPath = "/data/data/com.example.myapplication/files/binary.png";  // Fixed path to correctly indicate binary
-    imwrite(a_binaryPath, binary);
+    // Variables to store the longest line information
+    int longestLineLength = 0;
+    int startX = 0, endX = 0, lineY = 0;  // Coordinates for the longest line
 
+    // Iterate over each row to detect continuous white pixels
+    for (int i = 0; i < binary.rows; ++i) {
+        int currentLineStartX = -1;
+        int currentLineEndX = -1;
+        int currentLineLength = 0;
+
+        for (int j = 0; j < binary.cols; ++j) {
+            if (binary.at<uchar>(i, j) == 255) {
+                // Start of a new line
+                if (currentLineStartX == -1) {
+                    currentLineStartX = j;
+                }
+                currentLineEndX = j;
+                currentLineLength = currentLineEndX - currentLineStartX + 1;
+            } else {
+                // End of the current line
+                if (currentLineLength > longestLineLength) {
+                    longestLineLength = currentLineLength;
+                    startX = currentLineStartX;
+                    endX = currentLineEndX;
+                    lineY = i;
+                }
+                currentLineStartX = -1;  // Reset for the next potential line
+                currentLineEndX = -1;
+                currentLineLength = 0;
+            }
+        }
+
+        // Check for the last line in the row (if it ends at the last column)
+        if (currentLineLength > longestLineLength) {
+            longestLineLength = currentLineLength;
+            startX = currentLineStartX;
+            endX = currentLineEndX;
+            lineY = i;
+        }
+    }
+
+    // If a longest line is detected, draw it on the image (in red)
+    if (longestLineLength > 0) {
+        line(visual, Point(startX, lineY), Point(endX, lineY), Scalar(0, 0, 255), 2);  // Red line
+    }
+
+    // Crop the region below the detected line
+    if (lineY > 0) {
+        Rect cropRegion(0, lineY, binary.cols, binary.rows - lineY);  // Region below the longest line
+        Mat croppedBinary = binary(cropRegion);
+
+        // Save the cropped binary image
+        string a_binaryPath = "/data/data/com.example.myapplication/files/binary.png";
+        imwrite(a_binaryPath, croppedBinary);
+
+        // Save the visualization for debugging
+        string visualPath = "/data/data/com.example.myapplication/files/visual_debug.png";
+        imwrite(visualPath, visual);
+
+        return croppedBinary;
+    }
+
+    // If no line is detected or other issues, return the original binary
     return binary;
 }
 
+
 vector<Rect> detectBubbles(Mat& binary) {
     vector<vector<Point>> contours;
-    findContours(binary, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+    vector<Vec4i> hierarchy;
+    findContours(binary, contours, hierarchy, RETR_CCOMP, CHAIN_APPROX_SIMPLE); // Use RETR_CCOMP to get both filled and outlined
 
     vector<Rect> bubbles;
     for (const auto& contour : contours) {
@@ -63,6 +128,7 @@ vector<Rect> detectBubbles(Mat& binary) {
     }
     return bubbles;
 }
+
 
 vector<Rect> filterDuplicates(vector<Rect>& bubbles, double minDist = 10.0) {
     vector<Rect> filtered;
@@ -323,10 +389,10 @@ Java_com_example_myapplication_data_omrresult_repository_OMRRepositoryImpl_proce
             int width = input.cols;
 
             // Crop 29% from the top, 10% from the bottom, and 5% from the left and right
-            int cropTop = static_cast<int>(height * 0.29);  // 29% of the height
-            int cropBottom = static_cast<int>(height * 0.10);  // 10% of the height
-            int cropLeft = static_cast<int>(width * 0.04);  // 5% of the width
-            int cropRight = static_cast<int>(width * 0.05);  // 5% of the width
+            int cropTop = static_cast<int>(height * 0.20);  // 29% of the height
+            int cropBottom = static_cast<int>(height * 0.05);  // 10% of the height
+            int cropLeft = 0;  // 5% of the width
+            int cropRight = 0;  // 5% of the width
 
             // Define the region of interest (ROI)
             Rect roi(cropLeft, cropTop, width - cropLeft - cropRight, height - cropTop - cropBottom);  // Crop top, bottom, and sides
