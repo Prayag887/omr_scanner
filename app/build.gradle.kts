@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -70,6 +73,16 @@ android {
     }
 }
 
+val secretsPropertiesFile = rootProject.file("secrets.properties")
+val secrets = Properties()
+
+val githubToken: String by lazy {
+    val propsFile = rootProject.file("secrets.properties")
+    val props = Properties()
+    props.load(FileInputStream(propsFile))
+    props.getProperty("GITHUB_TOKEN") ?: throw GradleException("GITHUB_TOKEN not found in secrets.properties")
+}
+
 publishing {
     publications {
         register<MavenPublication>("release") {
@@ -89,7 +102,7 @@ publishing {
             url = uri("https://maven.pkg.github.com/Prayag887/omr_scanner")
             credentials {
                 username = "Prayag887"
-                password = "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"
+                password = githubToken
             }
         }
     }

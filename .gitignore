@@ -17,3 +17,5 @@ local.properties
 /OpenCV-sdk/build/
 OpenCV-sdk/build/**
 *.aar**
+
+secrets.properties
