@@ -73,6 +73,8 @@ android {
     }
 }
 
+
+// get the github token from secrets properties file
 val secretsPropertiesFile = rootProject.file("secrets.properties")
 val secrets = Properties()
 
@@ -83,6 +85,7 @@ val githubToken: String by lazy {
     props.getProperty("GITHUB_TOKEN") ?: throw GradleException("GITHUB_TOKEN not found in secrets.properties")
 }
 
+    //publish the aar file to the github package registry as maven package
 publishing {
     publications {
         register<MavenPublication>("release") {
