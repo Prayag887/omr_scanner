@@ -8,11 +8,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.myapplication"
+    namespace = "com.prayag.omr_scan_aar"
     compileSdk = 35
 
     defaultConfig {
-//        applicationId = "com.example.myapplication"
+//        applicationId = "com.prayag.omr_scan_aar"
         minSdk = 24
         targetSdk = 35
 //        versionCode = 1

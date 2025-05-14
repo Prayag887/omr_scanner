@@ -91,11 +91,11 @@ Mat preprocessForOMR(Mat& gray) {
         Mat croppedBinary = binary(cropRegion);
 
         // Save the cropped binary image
-        string a_binaryPath = "/data/data/com.example.myapplication/files/binary.png";
+        string a_binaryPath = "/data/data/com.prayag.omr_scan_aar/files/binary.png";
         imwrite(a_binaryPath, croppedBinary);
 
         // Save the visualization for debugging
-        string visualPath = "/data/data/com.example.myapplication/files/visual_debug.png";
+        string visualPath = "/data/data/com.prayag.omr_scan_aar/files/visual_debug.png";
         imwrite(visualPath, visual);
 
         return croppedBinary;
@@ -232,7 +232,7 @@ QuestionBubbles processColumns(Mat& binary) {
 
 
         Mat columnImg = binary(roi);
-        string colPath = "/data/data/com.example.myapplication/files/column_" +
+        string colPath = "/data/data/com.prayag.omr_scan_aar/files/column_" +
                          to_string(col + 1) + ".png";
         imwrite(colPath, columnImg);
 
@@ -324,7 +324,7 @@ pair<vector<int>, vector<Rect>> analyzeColumn(Mat& columnImg, int colIndex) {
         }
     }
 
-    string debugPath = "/data/data/com.example.myapplication/files/debug_column_" +
+    string debugPath = "/data/data/com.prayag.omr_scan_aar/files/debug_column_" +
                        to_string(colIndex + 1) + ".png";
     imwrite(debugPath, debugImg);
 
@@ -365,7 +365,7 @@ void generateMarkedImage(Mat& columnImg, vector<Rect>& bubbles,
                 0.7, Scalar(0, 255, 0), 2, LINE_AA);
     }
 
-    string path = "/data/data/com.example.myapplication/files/marked_column_" +
+    string path = "/data/data/com.prayag.omr_scan_aar/files/marked_column_" +
                   to_string(colIndex + 1) + ".png";
     imwrite(path, marked);
 }
@@ -377,7 +377,7 @@ Java_com_example_myapplication_data_omrresult_repository_OMRRepositoryImpl_proce
 
     try {
         // Load the saved paper image instead of using matAddr
-        string paperPath = "/data/data/com.example.myapplication/files/paper.png";
+        string paperPath = "/data/data/com.prayag.omr_scan_aar/files/paper.png";
         Mat input = imread(paperPath, IMREAD_COLOR);
 
         if (input.empty()) {
@@ -399,7 +399,7 @@ Java_com_example_myapplication_data_omrresult_repository_OMRRepositoryImpl_proce
 
             // Apply the cropping
             Mat croppedImage = input(roi);
-            string cropPath = "/data/data/com.example.myapplication/files/cropped.png";
+            string cropPath = "/data/data/com.prayag.omr_scan_aar/files/cropped.png";
             imwrite(cropPath, croppedImage);
 
             // Process the cropped image
@@ -416,7 +416,7 @@ Java_com_example_myapplication_data_omrresult_repository_OMRRepositoryImpl_proce
             // Force the originally dark regions to stay black
             gray.setTo(0, darkMask);
 
-            string grayPath = "/data/data/com.example.myapplication/files/gray.png";
+            string grayPath = "/data/data/com.prayag.omr_scan_aar/files/gray.png";
             imwrite(grayPath, gray);
 
             // Apply Gaussian blur to reduce noise and enhance edges (for clearer detection)
@@ -425,7 +425,7 @@ Java_com_example_myapplication_data_omrresult_repository_OMRRepositoryImpl_proce
             // Keep dark regions dark even after blurring
             blurred.setTo(0, darkMask);
 
-            string blurPath = "/data/data/com.example.myapplication/files/blurred.png";
+            string blurPath = "/data/data/com.prayag.omr_scan_aar/files/blurred.png";
             imwrite(blurPath, blurred);
 
             // Perform adaptive thresholding to improve clarity for edge detection
@@ -434,7 +434,7 @@ Java_com_example_myapplication_data_omrresult_repository_OMRRepositoryImpl_proce
             // After thresholding, the darkest regions should be white (255), so invert the mask for binary image
             binary.setTo(0, darkMask);  // Ensure darkest areas from original stay black in binary
 
-            string a_binaryPath = "/data/data/com.example.myapplication/files/abinary.png";  // Fixed path to correctly indicate binary
+            string a_binaryPath = "/data/data/com.prayag.omr_scan_aar/files/abinary.png";  // Fixed path to correctly indicate binary
             imwrite(a_binaryPath, binary);
 
             // Process the binary image
@@ -443,7 +443,7 @@ Java_com_example_myapplication_data_omrresult_repository_OMRRepositoryImpl_proce
             QuestionBubbles qb = processColumns(binary);
 
             for (int col = 0; col < 4; col++) {
-                string colPath = "/data/data/com.example.myapplication/files/column_" +
+                string colPath = "/data/data/com.prayag.omr_scan_aar/files/column_" +
                                  to_string(col + 1) + ".png";
                 Mat columnImg = imread(colPath, IMREAD_GRAYSCALE);
 
