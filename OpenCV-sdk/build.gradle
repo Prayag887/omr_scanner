@@ -1,4 +1,5 @@
 apply plugin: 'com.android.library'
+apply plugin: 'maven-publish'
 
 def openCVersionName = "4.5.1"
 def openCVersionCode = ((4 * 100 + 5) * 100 + 1) * 10 + 0
@@ -10,7 +11,7 @@ android {
     namespace = "org.opencv"
 
     defaultConfig {
-        minSdkVersion 21
+        minSdkVersion 24
         targetSdkVersion 33 // Updated to match compileSdkVersion
 
         versionCode openCVersionCode
@@ -57,6 +58,54 @@ android {
     externalNativeBuild {
         cmake {
             path (project.projectDir.toString() + '/libcxx_helper/CMakeLists.txt')
+        }
+    }
+}
+
+
+// Get the GitHub token from secrets.properties file
+def secretsPropertiesFile = rootProject.file("secrets.properties")
+def secrets = new Properties()
+
+// Optional: load from file if needed
+// if (secretsPropertiesFile.exists()) {
+//     secrets.load(new FileInputStream(secretsPropertiesFile))
+//     githubToken = secrets.getProperty("gpr.key")
+// }
+
+def githubToken = {
+    def propsFile = rootProject.file('secrets.properties')
+    def props = new Properties()
+    props.load(new FileInputStream(propsFile))
+    def token = props.getProperty('GITHUB_TOKEN')
+    if (!token) {
+        throw new GradleException('GITHUB_TOKEN not found in secrets.properties')
+    }
+    return token
+}()
+
+
+// Publish the AAR file to the GitHub Package Registry as a Maven package
+publishing {
+    publications {
+        release(MavenPublication) {
+            groupId = 'com.prayag'
+            artifactId = 'opencv'
+            version = '0.0.6'
+
+
+            artifact("$buildDir/outputs/aar/OpenCV-sdk-release.aar")
+        }
+    }
+
+    repositories {
+        maven {
+            name = 'omr_package'
+            url = uri('https://maven.pkg.github.com/Prayag887/omr_scanner')
+            credentials {
+                username = 'Prayag887'
+                password = githubToken
+            }
         }
     }
 }
