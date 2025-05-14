@@ -372,7 +372,7 @@ void generateMarkedImage(Mat& columnImg, vector<Rect>& bubbles,
 
 extern "C"
 JNIEXPORT jintArray JNICALL
-Java_com_example_myapplication_data_omrresult_repository_OMRRepositoryImpl_processOMR(JNIEnv* env, jobject, jlong matAddr) {
+Java_com_prayag_omr_1scan_1aar_data_omrresult_repository_OMRRepositoryImpl_processOMR(JNIEnv* env, jobject, jlong matAddr) {
     vector<int> finalAnswers;
 
     try {
