@@ -91,7 +91,7 @@ publishing {
         release(MavenPublication) {
             groupId = 'com.prayag'
             artifactId = 'opencv'
-            version = '0.0.6'
+            version = '0.1.4'
 
 
             artifact("$buildDir/outputs/aar/OpenCV-sdk-release.aar")

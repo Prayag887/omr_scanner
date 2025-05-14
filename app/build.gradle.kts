@@ -91,7 +91,7 @@ publishing {
         register<MavenPublication>("release") {
             groupId = "com.prayag"
             artifactId = "omr-scanner"
-            version = "0.0.1"
+            version = "0.1.4"
 
             afterEvaluate {
                 from(components["release"])
