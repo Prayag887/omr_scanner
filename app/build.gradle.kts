@@ -84,6 +84,12 @@ val githubToken: String by lazy {
     props.load(FileInputStream(propsFile))
     props.getProperty("GITHUB_TOKEN") ?: throw GradleException("GITHUB_TOKEN not found in secrets.properties")
 }
+val publishVersion: String by lazy {
+    val propsFile = rootProject.file("secrets.properties")
+    val props = Properties()
+    props.load(FileInputStream(propsFile))
+    props.getProperty("PUBLISH_VERSION") ?: throw GradleException("PUBLISH_VERSION not found in secrets.properties")
+}
 
 //publish the aar file to the github package registry as maven package
 publishing {
@@ -91,7 +97,7 @@ publishing {
         register<MavenPublication>("release") {
             groupId = "com.prayag"
             artifactId = "omr-scanner"
-            version = "0.1.6"
+            version = publishVersion
 
             afterEvaluate {
                 from(components["release"])

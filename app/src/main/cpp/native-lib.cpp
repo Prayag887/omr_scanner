@@ -12,6 +12,13 @@
 using namespace cv;
 using namespace std;
 
+string APP_PACKAGE_PATH;
+
+// Get the base path for file operations
+string getBasePath() {
+    return "/data/data/" + APP_PACKAGE_PATH + "/files/";
+}
+
 const int OPTIONS_PER_QUESTION = 4;
 const double SELECTION_THRESHOLD = 0.5;
 const int MIN_BUBBLE_AREA = 10;
@@ -32,8 +39,8 @@ struct QuestionBubbles {
 
 Mat preprocessForOMR(Mat& gray) {
     Mat binary;
-   GaussianBlur(gray, gray, Size(5, 5), 0);
-   threshold(gray, binary, 0, 255, THRESH_BINARY_INV + THRESH_OTSU);
+    GaussianBlur(gray, gray, Size(5, 5), 0);
+    threshold(gray, binary, 0, 255, THRESH_BINARY_INV + THRESH_OTSU);
 
     // Create a copy for visualization
     Mat visual = binary.clone();
@@ -91,11 +98,11 @@ Mat preprocessForOMR(Mat& gray) {
         Mat croppedBinary = binary(cropRegion);
 
         // Save the cropped binary image
-        string a_binaryPath = "/data/data/com.prayag.omr_scan_aar/files/binary.png";
+        string a_binaryPath = getBasePath() + "binary.png";
         imwrite(a_binaryPath, croppedBinary);
 
         // Save the visualization for debugging
-        string visualPath = "/data/data/com.prayag.omr_scan_aar/files/visual_debug.png";
+        string visualPath = getBasePath() + "visual_debug.png";
         imwrite(visualPath, visual);
 
         return croppedBinary;
@@ -104,6 +111,7 @@ Mat preprocessForOMR(Mat& gray) {
     // If no line is detected or other issues, return the original binary
     return binary;
 }
+
 
 
 vector<Rect> detectBubbles(Mat& binary) {
@@ -151,15 +159,12 @@ vector<Rect> filterDuplicates(vector<Rect>& bubbles, double minDist = 10.0) {
 
 vector<vector<Rect>> organizeBubblesByQuestion(vector<Rect>& bubbles) {
     vector<vector<Rect>> questions;
-
     // Sort bubbles by Y first (top-to-bottom), then by X (left-to-right)
     sort(bubbles.begin(), bubbles.end(), [](const Rect &a, const Rect &b) {
         return (a.y == b.y) ? (a.x < b.x) : (a.y < b.y);
     });
-
     for (const auto& bubble : bubbles) {
         bool added = false;
-
         for (auto& question : questions) {
             if (abs(question[0].y - bubble.y) < VERTICAL_THRESHOLD) {
                 question.push_back(bubble);
@@ -167,17 +172,19 @@ vector<vector<Rect>> organizeBubblesByQuestion(vector<Rect>& bubbles) {
                 break;
             }
         }
-
         if (!added) {
             questions.push_back({bubble});
         }
     }
-
     // Ensure bubbles within each question are sorted left-to-right
     for (auto& question : questions) {
         sort(question.begin(), question.end(), [](const Rect &a, const Rect &b) {
             return a.x < b.x;
         });
+        // If 5 bubbles are detected, remove the first one
+        if (question.size() == 5) {
+            question.erase(question.begin());
+        }
     }
 
     return questions;
@@ -232,8 +239,7 @@ QuestionBubbles processColumns(Mat& binary) {
 
 
         Mat columnImg = binary(roi);
-        string colPath = "/data/data/com.prayag.omr_scan_aar/files/column_" +
-                         to_string(col + 1) + ".png";
+        string colPath = getBasePath() + "column_" + to_string(col + 1) + ".png";
         imwrite(colPath, columnImg);
 
         sort(colBubbles.begin(), colBubbles.end(), [](const Rect& a, const Rect& b) {
@@ -324,8 +330,7 @@ pair<vector<int>, vector<Rect>> analyzeColumn(Mat& columnImg, int colIndex) {
         }
     }
 
-    string debugPath = "/data/data/com.prayag.omr_scan_aar/files/debug_column_" +
-                       to_string(colIndex + 1) + ".png";
+    string debugPath = getBasePath() + "debug_column_" + to_string(colIndex + 1) + ".png";
     imwrite(debugPath, debugImg);
 
     return {answers, selectedBubbles};
@@ -365,19 +370,21 @@ void generateMarkedImage(Mat& columnImg, vector<Rect>& bubbles,
                 0.7, Scalar(0, 255, 0), 2, LINE_AA);
     }
 
-    string path = "/data/data/com.prayag.omr_scan_aar/files/marked_column_" +
-                  to_string(colIndex + 1) + ".png";
+    string path = getBasePath() + "marked_column_" + to_string(colIndex + 1) + ".png";
     imwrite(path, marked);
 }
 
 extern "C"
 JNIEXPORT jintArray JNICALL
-Java_com_prayag_omr_1scan_1aar_data_omrresult_repository_OMRRepositoryImpl_processOMR(JNIEnv* env, jobject, jlong matAddr) {
+Java_com_prayag_omr_1scan_1aar_data_omrresult_repository_OMRRepositoryImpl_processOMR(JNIEnv* env, jobject thiz, jlong matAddr, jstring dir_path){
+    // Get the package name from the context
+    APP_PACKAGE_PATH = env->GetStringUTFChars(dir_path, 0);
+    LOGI("Using package path: %s", APP_PACKAGE_PATH.c_str());
     vector<int> finalAnswers;
 
     try {
         // Load the saved paper image instead of using matAddr
-        string paperPath = "/data/data/com.prayag.omr_scan_aar/files/paper.png";
+        string paperPath = getBasePath() + "paper.png";
         Mat input = imread(paperPath, IMREAD_COLOR);
 
         if (input.empty()) {
@@ -399,7 +406,7 @@ Java_com_prayag_omr_1scan_1aar_data_omrresult_repository_OMRRepositoryImpl_proce
 
             // Apply the cropping
             Mat croppedImage = input(roi);
-            string cropPath = "/data/data/com.prayag.omr_scan_aar/files/cropped.png";
+            string cropPath = getBasePath() + "cropped.png";
             imwrite(cropPath, croppedImage);
 
             // Process the cropped image
@@ -416,7 +423,7 @@ Java_com_prayag_omr_1scan_1aar_data_omrresult_repository_OMRRepositoryImpl_proce
             // Force the originally dark regions to stay black
             gray.setTo(0, darkMask);
 
-            string grayPath = "/data/data/com.prayag.omr_scan_aar/files/gray.png";
+            string grayPath = getBasePath() + "gray.png";
             imwrite(grayPath, gray);
 
             // Apply Gaussian blur to reduce noise and enhance edges (for clearer detection)
@@ -425,7 +432,7 @@ Java_com_prayag_omr_1scan_1aar_data_omrresult_repository_OMRRepositoryImpl_proce
             // Keep dark regions dark even after blurring
             blurred.setTo(0, darkMask);
 
-            string blurPath = "/data/data/com.prayag.omr_scan_aar/files/blurred.png";
+            string blurPath = getBasePath() + "blurred.png";
             imwrite(blurPath, blurred);
 
             // Perform adaptive thresholding to improve clarity for edge detection
@@ -434,7 +441,7 @@ Java_com_prayag_omr_1scan_1aar_data_omrresult_repository_OMRRepositoryImpl_proce
             // After thresholding, the darkest regions should be white (255), so invert the mask for binary image
             binary.setTo(0, darkMask);  // Ensure darkest areas from original stay black in binary
 
-            string a_binaryPath = "/data/data/com.prayag.omr_scan_aar/files/abinary.png";  // Fixed path to correctly indicate binary
+            string a_binaryPath = getBasePath() + "abinary.png";
             imwrite(a_binaryPath, binary);
 
             // Process the binary image
@@ -443,8 +450,7 @@ Java_com_prayag_omr_1scan_1aar_data_omrresult_repository_OMRRepositoryImpl_proce
             QuestionBubbles qb = processColumns(binary);
 
             for (int col = 0; col < 4; col++) {
-                string colPath = "/data/data/com.prayag.omr_scan_aar/files/column_" +
-                                 to_string(col + 1) + ".png";
+                string colPath = getBasePath() + "column_" + to_string(col + 1) + ".png";
                 Mat columnImg = imread(colPath, IMREAD_GRAYSCALE);
 
                 if (columnImg.empty()) {

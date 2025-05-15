@@ -84,6 +84,17 @@ def githubToken = {
     return token
 }()
 
+def publishVersion = {
+    def propsFile = rootProject.file('secrets.properties')
+    def props = new Properties()
+    props.load(new FileInputStream(propsFile))
+    def token = props.getProperty('PUBLISH_VERSION')
+    if (!token) {
+        throw new GradleException('PUBLISH_VERSION not found in secrets.properties')
+    }
+    return token
+}()
+
 
 // Publish the AAR file to the GitHub Package Registry as a Maven package
 publishing {
@@ -91,7 +102,7 @@ publishing {
         release(MavenPublication) {
             groupId = 'com.prayag'
             artifactId = 'opencv'
-            version = '0.1.6'
+            version = publishVersion
 
 
             artifact("$buildDir/outputs/aar/OpenCV-sdk-release.aar")
