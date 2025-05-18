@@ -12,7 +12,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.prayag.omr_scan_aar"
+//        applicationId = "com.prayag.omr_scan_aar"
         minSdk = 24
         targetSdk = 35
 //        versionCode = 1
