@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp"
+    android:layout_marginBottom="8dp">
+
+    <LinearLayout
+        android:id="@+id/llQuestionBackground"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:backgroundTint="@color/white"
+        android:orientation="horizontal"
+        android:paddingVertical="8dp"
+        android:paddingHorizontal="16dp">
+
+        <TextView
+            android:id="@+id/tvQuestionNumber"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:textColor="#333"
+            android:text="Q1"
+            android:padding="4dp"
+            android:layout_gravity="center_vertical"/>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="16dp"
+            android:orientation="horizontal"
+            android:weightSum="4">
+
+            <TextView
+                android:id="@+id/bubbleA"
+                android:layout_width="0dp"
+                android:layout_height="32dp"
+                android:layout_weight="1"
+                android:layout_margin="4dp"
+                android:gravity="center"
+                android:text="A"
+                android:textColor="#FFFFFF"
+                android:background="@drawable/bubble_default"
+                android:textSize="14sp"/>
+
+            <TextView
+                android:id="@+id/bubbleB"
+                android:layout_width="0dp"
+                android:layout_height="32dp"
+                android:layout_weight="1"
+                android:layout_margin="4dp"
+                android:gravity="center"
+                android:text="B"
+                android:textColor="#FFFFFF"
+                android:background="@drawable/bubble_default"
+                android:textSize="14sp"/>
+
+            <TextView
+                android:id="@+id/bubbleC"
+                android:layout_width="0dp"
+                android:layout_height="32dp"
+                android:layout_weight="1"
+                android:layout_margin="4dp"
+                android:gravity="center"
+                android:text="C"
+                android:textColor="#FFFFFF"
+                android:background="@drawable/bubble_default"
+                android:textSize="14sp"/>
+
+            <TextView
+                android:id="@+id/bubbleD"
+                android:layout_width="0dp"
+                android:layout_height="32dp"
+                android:layout_weight="1"
+                android:layout_margin="4dp"
+                android:gravity="center"
+                android:text="D"
+                android:textColor="#FFFFFF"
+                android:background="@drawable/bubble_default"
+                android:textSize="14sp"/>
+        </LinearLayout>
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

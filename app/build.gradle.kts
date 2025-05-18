@@ -12,7 +12,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-//        applicationId = "com.prayag.omr_scan_aar"
+        applicationId = "com.prayag.omr_scan_aar"
         minSdk = 24
         targetSdk = 35
 //        versionCode = 1
@@ -26,7 +26,8 @@ android {
             }
         }
         ndk {
-            abiFilters += setOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            abiFilters += setOf("armeabi-v7a")
+//            abiFilters += setOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
         }
 
         buildFeatures {
@@ -37,7 +38,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

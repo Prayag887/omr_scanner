@@ -3,12 +3,14 @@ package com.prayag.omr_scan_aar.presentation.omrresult
 import android.graphics.Color
 import android.os.Bundle
 import android.view.View
-import android.widget.*
+import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
+import com.facebook.shimmer.ShimmerFrameLayout
 import com.prayag.omr_scan_aar.R
 import com.prayag.omr_scan_aar.data.omrresult.repository.OMRRepositoryImpl
-import com.facebook.shimmer.ShimmerFrameLayout
 
 class ResultActivity : AppCompatActivity() {
 
@@ -34,25 +36,40 @@ class ResultActivity : AppCompatActivity() {
             resultsContainer.visibility = View.VISIBLE
 
             results.forEach { result ->
-                val card = CardView(this).apply {
-                    radius = 16f
-                    setCardBackgroundColor(Color.WHITE)
-                    useCompatPadding = true
-                    val textView = TextView(context).apply {
-                        text = "Q${result.questionNumber}: ${if (result.answer == -1) "Unmarked" else "Option ${result.answer}"}"
-                        textSize = 16f
-                        setPadding(20, 20, 20, 20)
-                        setTextColor(Color.BLACK)
-                    }
-                    addView(textView)
-                    layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                    ).apply {
-                        bottomMargin = 16
+                val itemView = layoutInflater.inflate(
+                    R.layout.item_question,
+                    resultsContainer,
+                    false
+                ) as CardView
+
+                val llQuestionBackground = itemView.findViewById<LinearLayout>(R.id.llQuestionBackground)
+                val tvQuestionNumber = itemView.findViewById<TextView>(R.id.tvQuestionNumber)
+                val bubbleA = itemView.findViewById<TextView>(R.id.bubbleA)
+                val bubbleB = itemView.findViewById<TextView>(R.id.bubbleB)
+                val bubbleC = itemView.findViewById<TextView>(R.id.bubbleC)
+                val bubbleD = itemView.findViewById<TextView>(R.id.bubbleD)
+
+                tvQuestionNumber.text = "Q${result.questionNumber}"
+                llQuestionBackground.setBackgroundColor(Color.WHITE)
+
+                // Reset all bubbles
+                listOf(bubbleA, bubbleB, bubbleC, bubbleD).forEach { bubble ->
+                    bubble.background = getDrawable(R.drawable.bubble_default)
+                }
+
+                // Highlight selected answer
+                when (result.answer) {
+                    0 -> bubbleA.background = getDrawable(R.drawable.bubble_selected)
+                    1 -> bubbleB.background = getDrawable(R.drawable.bubble_selected)
+                    2 -> bubbleC.background = getDrawable(R.drawable.bubble_selected)
+                    3 -> bubbleD.background = getDrawable(R.drawable.bubble_selected)
+                    -1 -> {
+                        // Optional: Handle unmarked questions
+                        // Example: bubbleA.background = getDrawable(R.drawable.bubble_error)
                     }
                 }
-                resultsContainer.addView(card)
+
+                resultsContainer.addView(itemView)
             }
         }
 
