@@ -1,5 +1,7 @@
 package com.prayag.omr_scan_aar.presentation.omrresult
 
+import android.content.Context
+import android.content.SharedPreferences
 import android.graphics.Color
 import android.os.Bundle
 import android.view.View
@@ -15,6 +17,7 @@ import com.prayag.omr_scan_aar.data.omrresult.repository.OMRRepositoryImpl
 class ResultActivity : AppCompatActivity() {
 
     private lateinit var viewModel: ResultViewModel
+    private val questionAnswers = mutableMapOf<Int, Int>() // Store question number and selected answer index
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,7 +38,12 @@ class ResultActivity : AppCompatActivity() {
             shimmerLayout.visibility = View.GONE
             resultsContainer.visibility = View.VISIBLE
 
+            // Clear previous answers
+            questionAnswers.clear()
+
             results.forEach { result ->
+                // Store the question number and answer for SharedPreferences
+                questionAnswers[result.questionNumber] = result.answer
                 val itemView = layoutInflater.inflate(
                     R.layout.item_question,
                     resultsContainer,
@@ -88,6 +96,29 @@ class ResultActivity : AppCompatActivity() {
         }
 
         viewModel.processOMR(intent.getStringExtra("image_path"))
-        btnBack.setOnClickListener { finish() }
+
+        btnBack.setOnClickListener {
+            saveResultsToSharedPreferences()
+            finishAffinity()
+        }
+    }
+
+    private fun saveResultsToSharedPreferences() {
+        val sharedPreferences: SharedPreferences = getSharedPreferences("omr_result", Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+
+        // Clear existing data and save new results
+        editor.clear()
+
+        // Save each question's selected bubble index
+        questionAnswers.forEach { (questionNumber, answerIndex) ->
+            val key = "question_$questionNumber"
+            editor.putInt(key, answerIndex)
+        }
+
+        // Save metadata
+        editor.putInt("total_questions", questionAnswers.size)
+
+        editor.apply()
     }
 }

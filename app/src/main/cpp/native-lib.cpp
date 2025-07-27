@@ -266,31 +266,31 @@ pair<vector<int>, vector<Rect>> analyzeColumn(Mat& columnImg, int colIndex) {
 
     vector<vector<Rect>> questions = organizeBubblesByQuestion(bubbles);
 
+    // Filter out invalid questions (1-2 bubbles) and validate question count
+    vector<vector<Rect>> validQuestions;
+    for (size_t q = 0; q < questions.size(); q++) {
+        if (questions[q].size() >= 3 && questions[q].size() <= 4) {
+            validQuestions.push_back(questions[q]);
+        } else if (questions[q].size() == 1 || questions[q].size() == 2) {
+            LOGI("Ignoring invalid question with %d bubbles (needs 3-4)", (int)questions[q].size());
+        } else {
+            LOGE("Question has %d bubbles, expected 3-4", (int)questions[q].size());
+        }
+    }
+
+    // Validate we have exactly 50 questions
+    if (validQuestions.size() != 50) {
+        LOGE("Column %d has %d valid questions, expected 50", colIndex + 1, (int)validQuestions.size());
+    }
+
     Mat debugImg;
     cvtColor(columnImg, debugImg, COLOR_GRAY2BGR);
 
-    for (size_t q = 0; q < questions.size(); q++) {
-        auto& options = questions[q];
+    // Process only valid questions
+    for (size_t q = 0; q < validQuestions.size(); q++) {
+        auto& options = validQuestions[q];
 
-        if (options.size() != OPTIONS_PER_QUESTION) {
-            LOGE("Question %d has %d options instead of %d",
-                 (int)q+1, (int)options.size(), OPTIONS_PER_QUESTION);
-
-            for (const auto& opt : options) {
-                rectangle(debugImg, opt, Scalar(0, 0, 255), 2);
-
-                Point textPos(opt.x, opt.y - 5);
-                if (textPos.y < 5) textPos.y = opt.y + 15;
-
-                putText(debugImg, "" + to_string(q+1), textPos,
-                        FONT_HERSHEY_SIMPLEX, 0.35, Scalar(0, 0, 255), 1);
-            }
-
-            answers.push_back(-1);
-            selectedBubbles.push_back(Rect(-1, -1, 0, 0));
-            continue;
-        }
-
+        // Draw all options for this question
         for (size_t o = 0; o < options.size(); o++) {
             rectangle(debugImg, options[o], Scalar(255, 0, 0), 1);
 
@@ -302,15 +302,52 @@ pair<vector<int>, vector<Rect>> analyzeColumn(Mat& columnImg, int colIndex) {
                     0.25, Scalar(0, 255, 255), 1);
         }
 
+        // Calculate fill percentages for each option
         vector<float> fills;
         for (const auto& opt : options) {
-            Mat roi = columnImg(opt);
-            float fill = countNonZero(roi) / (float)(roi.total());
+            // Simply shrink the rectangle to focus on the center area
+            // This preserves more bubble detail than a circular mask
+            int shrinkX = opt.width * 0.1;  // Shrink by 10% on each side
+            int shrinkY = opt.height * 0.1;
+
+            Rect shrunkOpt(
+                    opt.x + shrinkX,
+                    opt.y + shrinkY,
+                    max(1, opt.width - 2*shrinkX),
+                    max(1, opt.height - 2*shrinkY)
+            );
+
+            // Ensure shrunk rectangle is within image bounds
+            shrunkOpt = shrunkOpt & Rect(0, 0, columnImg.cols, columnImg.rows);
+
+            Mat roi = columnImg(shrunkOpt);
+
+            // Count white pixels (filled areas in inverted image)
+            int whitePixels = countNonZero(roi);
+            int totalPixels = roi.total();
+            float fill = whitePixels / (float)totalPixels;
             fills.push_back(fill);
 
-            LOGI("Q%d-%c fill: %.2f", (int)q+1, 'A' + fills.size() - 1, fill);
+            // Debug info for first few bubbles
+            if (q < 2) {
+                LOGI("Debug Q%d-%c: original=%dx%d, shrunk=%dx%d, shrink=(%d,%d)",
+                     (int)q+1, 'A' + fills.size() - 1,
+                     opt.width, opt.height, shrunkOpt.width, shrunkOpt.height, shrinkX, shrinkY);
+
+                // Save debug images
+                string originalPath = getBasePath() + "debug_original_Q" + to_string(q+1) + "_" + char('A' + fills.size() - 1) + ".png";
+                imwrite(originalPath, columnImg(opt));
+
+                string shrunkPath = getBasePath() + "debug_shrunk_Q" + to_string(q+1) + "_" + char('A' + fills.size() - 1) + ".png";
+                imwrite(shrunkPath, roi);
+            }
+
+            LOGI("Q%d-%c fill: %.2f (%d/%d pixels) [shrunk by %dx%d] %s",
+                 (int)q+1, 'A' + fills.size() - 1, fill, whitePixels, totalPixels, shrinkX, shrinkY,
+                 fill > 0.6 ? "FILLED" : "unfilled");
         }
 
+        // Find the most filled bubble above threshold
         int selected = -1;
         float maxFill = 0;
         for (size_t o = 0; o < fills.size(); o++) {
@@ -328,6 +365,12 @@ pair<vector<int>, vector<Rect>> analyzeColumn(Mat& columnImg, int colIndex) {
         } else {
             selectedBubbles.push_back(Rect(-1, -1, 0, 0));
         }
+    }
+
+    // Ensure we have exactly 50 answers (pad with -1 if needed)
+    while (answers.size() < 50) {
+        answers.push_back(-1);
+        selectedBubbles.push_back(Rect(-1, -1, 0, 0));
     }
 
     string debugPath = getBasePath() + "debug_column_" + to_string(colIndex + 1) + ".png";
@@ -397,7 +440,7 @@ Java_com_prayag_omr_1scan_1aar_data_omrresult_repository_OMRRepositoryImpl_proce
 
             // Crop 29% from the top, 10% from the bottom, and 5% from the left and right
             int cropTop = static_cast<int>(height * 0.20);  // 29% of the height
-            int cropBottom = static_cast<int>(height * 0.05);  // 10% of the height
+            int cropBottom = static_cast<int>(height * 0.02);  // 10% of the height
             int cropLeft = 0;  // 5% of the width
             int cropRight = 0;  // 5% of the width
 

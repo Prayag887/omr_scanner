@@ -26,8 +26,8 @@ android {
             }
         }
         ndk {
-            abiFilters += setOf("armeabi-v7a")
-//            abiFilters += setOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+//            abiFilters += setOf("armeabi-v7a")
+            abiFilters += setOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
         }
 
         buildFeatures {
@@ -38,7 +38,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
+//            isMinifyEnabled = true
 //            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
