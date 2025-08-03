@@ -27,6 +27,6 @@ shimmer = { module = "com.facebook.shimmer:shimmer", version.ref = "shimmer" }
 
 [plugins]
 #change to library here
-android-application = { id = "com.android.application", version.ref = "agp" }
+android-application = { id = "com.android.library", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 

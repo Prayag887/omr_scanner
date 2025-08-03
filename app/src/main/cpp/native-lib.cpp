@@ -36,7 +36,6 @@ struct QuestionBubbles {
     vector<vector<Rect>> columnBubbles;
 };
 
-
 Mat preprocessForOMR(Mat& gray) {
     Mat binary;
     GaussianBlur(gray, gray, Size(5, 5), 0);
@@ -112,8 +111,6 @@ Mat preprocessForOMR(Mat& gray) {
     return binary;
 }
 
-
-
 vector<Rect> detectBubbles(Mat& binary) {
     vector<vector<Point>> contours;
     vector<Vec4i> hierarchy;
@@ -136,7 +133,6 @@ vector<Rect> detectBubbles(Mat& binary) {
     }
     return bubbles;
 }
-
 
 vector<Rect> filterDuplicates(vector<Rect>& bubbles, double minDist = 10.0) {
     vector<Rect> filtered;
@@ -237,7 +233,6 @@ QuestionBubbles processColumns(Mat& binary) {
 
         Rect roi(x, y, w, h);
 
-
         Mat columnImg = binary(roi);
         string colPath = getBasePath() + "column_" + to_string(col + 1) + ".png";
         imwrite(colPath, columnImg);
@@ -252,6 +247,7 @@ QuestionBubbles processColumns(Mat& binary) {
     return result;
 }
 
+// UPDATED: Modified to return multiple selections with separators
 pair<vector<int>, vector<Rect>> analyzeColumn(Mat& columnImg, int colIndex) {
     vector<int> answers;
     vector<Rect> selectedBubbles;
@@ -306,7 +302,6 @@ pair<vector<int>, vector<Rect>> analyzeColumn(Mat& columnImg, int colIndex) {
         vector<float> fills;
         for (const auto& opt : options) {
             // Simply shrink the rectangle to focus on the center area
-            // This preserves more bubble detail than a circular mask
             int shrinkX = opt.width * 0.1;  // Shrink by 10% on each side
             int shrinkY = opt.height * 0.1;
 
@@ -347,54 +342,56 @@ pair<vector<int>, vector<Rect>> analyzeColumn(Mat& columnImg, int colIndex) {
                  fill > 0.6 ? "FILLED" : "unfilled");
         }
 
-        // Check for multiple fills above 0.7 threshold
-        int filledCount = 0;
+        // UPDATED: Find ALL bubbles filled above threshold
+        vector<int> filledBubbles;
+        vector<Rect> filledBubbleRects;
         for (size_t o = 0; o < fills.size(); o++) {
             if (fills[o] > SELECTION_THRESHOLD) {
-                filledCount++;
+                filledBubbles.push_back(o);
+                filledBubbleRects.push_back(options[o]);
             }
         }
 
-        if (filledCount >= 2) {
-            // Multiple bubbles filled above 0.7 - mark as invalid response
-            LOGI("Q%d: Multiple bubbles filled above 0.7 (%d bubbles), marking as -2", (int)q+1, filledCount);
-            answers.push_back(-2);
+        if (filledBubbles.empty()) {
+            // No bubbles filled - store -1 and separator
+            answers.push_back(-1);
+            answers.push_back(-2); // Separator to mark end of this question
             selectedBubbles.push_back(Rect(-1, -1, 0, 0));
-            continue;
-        }
-
-        // Find the most filled bubble above threshold
-        int selected = -1;
-        float maxFill = 0;
-        for (size_t o = 0; o < fills.size(); o++) {
-            if (fills[o] > SELECTION_THRESHOLD && fills[o] > maxFill) {
-                maxFill = fills[o];
-                selected = o;
-            }
-        }
-
-        answers.push_back(selected);
-
-        if (selected != -1) {
-            selectedBubbles.push_back(options[selected]);
-            rectangle(debugImg, options[selected], Scalar(0, 255, 0), 2);
+            LOGI("Q%d: No bubbles filled above threshold", (int)q+1);
         } else {
-            selectedBubbles.push_back(Rect(-1, -1, 0, 0));
+            // Store ALL filled bubble indices
+            LOGI("Q%d: %d bubbles filled above threshold: ", (int)q+1, (int)filledBubbles.size());
+
+            for (size_t i = 0; i < filledBubbles.size(); i++) {
+                answers.push_back(filledBubbles[i]);
+                selectedBubbles.push_back(filledBubbleRects[i]);
+                LOGI("  Index %d (option %c)", filledBubbles[i], 'A' + filledBubbles[i]);
+
+                // Draw selected bubble in green
+                rectangle(debugImg, filledBubbleRects[i], Scalar(0, 255, 0), 2);
+            }
+
+            // Add separator to mark end of this question
+            answers.push_back(-2);
+
+            if (filledBubbles.size() > 1) {
+                LOGI("Q%d: MULTIPLE SELECTIONS DETECTED (%d total)", (int)q+1, (int)filledBubbles.size());
+            }
         }
     }
 
-    // Ensure we have exactly 50 answers (pad with -1 if needed)
-    while (answers.size() < 50) {
-        answers.push_back(-1);
-        selectedBubbles.push_back(Rect(-1, -1, 0, 0));
-    }
+    // UPDATED: Don't pad to exactly 50 since we're using separators
+    // The separator-based format will be parsed correctly by Kotlin
 
     string debugPath = getBasePath() + "debug_column_" + to_string(colIndex + 1) + ".png";
     imwrite(debugPath, debugImg);
 
+    LOGI("Column %d analysis complete. Total values in answers array: %d", colIndex + 1, (int)answers.size());
+
     return {answers, selectedBubbles};
 }
 
+// UPDATED: Handle multiple selections in visualization
 void generateMarkedImage(Mat& columnImg, vector<Rect>& bubbles,
                          const vector<Rect>& selected, int colIndex) {
     Mat marked;
@@ -419,6 +416,7 @@ void generateMarkedImage(Mat& columnImg, vector<Rect>& bubbles,
         }
     }
 
+    // Draw all selected bubbles
     for (const auto& sel : selected) {
         if (sel.x < 0 || sel.y < 0) continue;
 
@@ -504,12 +502,14 @@ Java_com_prayag_omr_1scan_1aar_data_omrresult_repository_OMRRepositoryImpl_proce
             imwrite(a_binaryPath, binary);
 
             // Process the binary image
-//            binary = preprocessForOMR(binary);  // if bubbles are made lighter colored then this is needed, otherwise below is sufficient
             binary = preprocessForOMR(blurred);  // Additional preprocessing if needed
 
             QuestionBubbles qb = processColumns(binary);
 
+            LOGI("=== PROCESSING ALL COLUMNS ===");
             for (int col = 0; col < 4; col++) {
+                LOGI("Processing column %d...", col + 1);
+
                 string colPath = getBasePath() + "column_" + to_string(col + 1) + ".png";
                 Mat columnImg = imread(colPath, IMREAD_GRAYSCALE);
 
@@ -525,7 +525,27 @@ Java_com_prayag_omr_1scan_1aar_data_omrresult_repository_OMRRepositoryImpl_proce
 
                 generateMarkedImage(columnImg, columnBubbles, selected, col);
 
+                // Add column results to final answers
+                int beforeSize = finalAnswers.size();
                 finalAnswers.insert(finalAnswers.end(), answers.begin(), answers.end());
+                int afterSize = finalAnswers.size();
+
+                LOGI("Column %d: Added %d values to final answers (total now: %d)",
+                     col + 1, afterSize - beforeSize, afterSize);
+            }
+
+            LOGI("=== FINAL RESULTS SUMMARY ===");
+            LOGI("Total values in final answers array: %d", (int)finalAnswers.size());
+
+            // Log the first 50 values to see the pattern
+            LOGI("First 50 values:");
+            for (int i = 0; i < min(50, (int)finalAnswers.size()); i += 10) {
+                string chunk = "";
+                for (int j = i; j < min(i + 10, (int)finalAnswers.size()); j++) {
+                    chunk += to_string(finalAnswers[j]);
+                    if (j < min(i + 9, (int)finalAnswers.size() - 1)) chunk += ", ";
+                }
+                LOGI("  [%d-%d]: %s", i, min(i + 9, (int)finalAnswers.size() - 1), chunk.c_str());
             }
         }
     }
@@ -534,6 +554,7 @@ Java_com_prayag_omr_1scan_1aar_data_omrresult_repository_OMRRepositoryImpl_proce
         finalAnswers = {-1};
     }
 
+    LOGI("Returning array with %d elements to Kotlin", (int)finalAnswers.size());
     jintArray result = env->NewIntArray(finalAnswers.size());
     env->SetIntArrayRegion(result, 0, finalAnswers.size(), finalAnswers.data());
     return result;
