@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
@@ -13,11 +14,17 @@ import androidx.cardview.widget.CardView
 import com.facebook.shimmer.ShimmerFrameLayout
 import com.prayag.omr_scan_aar.R
 import com.prayag.omr_scan_aar.data.omrresult.repository.OMRRepositoryImpl
+import com.prayag.omr_scan_aar.utils.SessionManager
 
 class ResultActivity : AppCompatActivity() {
 
     private lateinit var viewModel: ResultViewModel
     private val questionAnswers = mutableMapOf<Int, Int>() // Store question number and selected answer index
+    private var rollNumber: String? = null
+
+    companion object {
+        private const val TAG = "ResultActivity"
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,6 +35,15 @@ class ResultActivity : AppCompatActivity() {
         val btnBack = findViewById<Button>(R.id.btnBack)
 
         shimmerLayout.startShimmer()
+
+        // Get roll number from multiple sources
+        rollNumber = intent.getStringExtra("ROLL_NUMBER") ?: SessionManager.getRollNumber(this)
+
+        rollNumber?.let { rollNum ->
+            Log.d(TAG, "Roll number received: $rollNum")
+        } ?: run {
+            Log.w(TAG, "No roll number available")
+        }
 
         // Inject dependencies manually
         val repository = OMRRepositoryImpl()
@@ -110,6 +126,12 @@ class ResultActivity : AppCompatActivity() {
         // Clear existing data and save new results
         editor.clear()
 
+        // Save roll number
+        rollNumber?.let { rollNum ->
+            editor.putString("roll_number", rollNum)
+            Log.d(TAG, "Saving roll number to SharedPreferences: $rollNum")
+        }
+
         // Save each question's selected bubble index
         questionAnswers.forEach { (questionNumber, answerIndex) ->
             val key = "question_$questionNumber"
@@ -119,6 +141,14 @@ class ResultActivity : AppCompatActivity() {
         // Save metadata
         editor.putInt("total_questions", questionAnswers.size)
 
+        // Save timestamp for when results were saved
+        editor.putLong("timestamp", System.currentTimeMillis())
+
         editor.apply()
+        Log.d(TAG, "OMR results saved to SharedPreferences with ${questionAnswers.size} questions")
+
+        // Clear roll number from SessionManager after saving to OMR results
+        SessionManager.clearRollNumber(this)
+        Log.d(TAG, "Roll number cleared from SessionManager")
     }
 }

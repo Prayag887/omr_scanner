@@ -18,6 +18,7 @@ import com.prayag.omr_scan_aar.R
 import com.prayag.omr_scan_aar.presentation.omrresult.ResultActivity
 import com.prayag.omr_scan_aar.presentation.scanner.DocumentScannerActivity
 import com.prayag.omr_scan_aar.presentation.scanner.DocumentScannerCallback
+import com.prayag.omr_scan_aar.utils.SessionManager
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.opencv.android.BaseLoaderCallback
 import org.opencv.android.CameraBridgeViewBase
@@ -37,6 +38,7 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
 //    private lateinit var btnToggleCamera: FloatingActionButton
 
     private var currentFrame: Mat? = null
+    private var rollNumber: String? = null
 
     companion object {
         private const val TAG = "MainActivity"
@@ -71,6 +73,17 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // Get roll number from intent and store it globally
+        rollNumber = intent.getStringExtra("ROLL_NUMBER")
+
+        // Store in SessionManager for global access
+        rollNumber?.let { rollNum ->
+            SessionManager.setRollNumber(this, rollNum)
+            Log.d(TAG, "Roll number received and stored: $rollNum")
+        } ?: run {
+            Log.w(TAG, "No roll number received from intent")
+        }
+
         initializeViews()
         setupListeners()
         loadNativeLibrary()
@@ -94,6 +107,8 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         btnProcess.setOnClickListener {
             val intent = Intent(this, ResultActivity::class.java)
             intent.putExtra("image_path", "${filesDir}/paper.png")
+            // Pass roll number to ResultActivity
+            rollNumber?.let { intent.putExtra("ROLL_NUMBER", it) }
             startActivity(intent)
         }
 //        btnToggleCamera.setOnClickListener { handleToggleCameraClick() }
@@ -181,6 +196,8 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
 
         // Launch the document scanner activity
         val intent = Intent(this, DocumentScannerActivity::class.java)
+        // Pass roll number to DocumentScannerActivity if needed
+        rollNumber?.let { intent.putExtra("ROLL_NUMBER", it) }
         startActivity(intent)
     }
 

@@ -20,7 +20,7 @@ string getBasePath() {
 }
 
 const int OPTIONS_PER_QUESTION = 4;
-const double SELECTION_THRESHOLD = 0.5;
+const double SELECTION_THRESHOLD = 0.6;
 const int MIN_BUBBLE_AREA = 10;
 const int MAX_BUBBLE_AREA = 2000;
 const int MIN_BUBBLE_DIMENSION = 15;
@@ -347,6 +347,22 @@ pair<vector<int>, vector<Rect>> analyzeColumn(Mat& columnImg, int colIndex) {
                  fill > 0.6 ? "FILLED" : "unfilled");
         }
 
+        // Check for multiple fills above 0.7 threshold
+        int filledCount = 0;
+        for (size_t o = 0; o < fills.size(); o++) {
+            if (fills[o] > SELECTION_THRESHOLD) {
+                filledCount++;
+            }
+        }
+
+        if (filledCount >= 2) {
+            // Multiple bubbles filled above 0.7 - mark as invalid response
+            LOGI("Q%d: Multiple bubbles filled above 0.7 (%d bubbles), marking as -2", (int)q+1, filledCount);
+            answers.push_back(-2);
+            selectedBubbles.push_back(Rect(-1, -1, 0, 0));
+            continue;
+        }
+
         // Find the most filled bubble above threshold
         int selected = -1;
         float maxFill = 0;
@@ -440,7 +456,7 @@ Java_com_prayag_omr_1scan_1aar_data_omrresult_repository_OMRRepositoryImpl_proce
 
             // Crop 29% from the top, 10% from the bottom, and 5% from the left and right
             int cropTop = static_cast<int>(height * 0.20);  // 29% of the height
-            int cropBottom = static_cast<int>(height * 0.02);  // 10% of the height
+            int cropBottom = static_cast<int>(height * 0.01);  // 10% of the height
             int cropLeft = 0;  // 5% of the width
             int cropRight = 0;  // 5% of the width
 
@@ -488,7 +504,8 @@ Java_com_prayag_omr_1scan_1aar_data_omrresult_repository_OMRRepositoryImpl_proce
             imwrite(a_binaryPath, binary);
 
             // Process the binary image
-            binary = preprocessForOMR(binary);  // Additional preprocessing if needed
+//            binary = preprocessForOMR(binary);  // if bubbles are made lighter colored then this is needed, otherwise below is sufficient
+            binary = preprocessForOMR(blurred);  // Additional preprocessing if needed
 
             QuestionBubbles qb = processColumns(binary);
 
