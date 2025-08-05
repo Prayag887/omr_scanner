@@ -20,7 +20,7 @@ string getBasePath() {
 }
 
 const int OPTIONS_PER_QUESTION = 4;
-const double SELECTION_THRESHOLD = 0.6;
+const double SELECTION_THRESHOLD = 0.8;
 const int MIN_BUBBLE_AREA = 10;
 const int MAX_BUBBLE_AREA = 2000;
 const int MIN_BUBBLE_DIMENSION = 15;

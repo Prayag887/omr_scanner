@@ -26,31 +26,31 @@ class ResultActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "ResultActivity"
 
-        fun getMultipleAnswersFromSharedPreferences(context: Context, questionNumber: Int): List<Int> {
-            val sharedPreferences = context.getSharedPreferences("omr_result", Context.MODE_PRIVATE)
-            val count = sharedPreferences.getInt("question_${questionNumber}_count", 0)
-
-            return if (count > 0) {
-                (0 until count).map { index ->
-                    sharedPreferences.getInt("question_${questionNumber}_answer_$index", -1)
-                }
-            } else {
-                // Fallback to old format
-                listOf(sharedPreferences.getInt("question_$questionNumber", -1))
-            }
-        }
-
-        fun getAllMultipleAnswersFromSharedPreferences(context: Context): Map<Int, List<Int>> {
-            val sharedPreferences = context.getSharedPreferences("omr_result", Context.MODE_PRIVATE)
-            val totalQuestions = sharedPreferences.getInt("total_questions", 0)
-            val results = mutableMapOf<Int, List<Int>>()
-
-            for (questionNumber in 1..totalQuestions) {
-                results[questionNumber] = getMultipleAnswersFromSharedPreferences(context, questionNumber)
-            }
-
-            return results
-        }
+//        fun getMultipleAnswersFromSharedPreferences(context: Context, questionNumber: Int): List<Int> {
+//            val sharedPreferences = context.getSharedPreferences("omr_result", Context.MODE_PRIVATE)
+//            val count = sharedPreferences.getInt("question_${questionNumber}_count", 0)
+//
+//            return if (count > 0) {
+//                (0 until count).map { index ->
+//                    sharedPreferences.getInt("question_${questionNumber}_answer_$index", -1)
+//                }
+//            } else {
+//                // Fallback to old format
+//                listOf(sharedPreferences.getInt("question_$questionNumber", -1))
+//            }
+//        }
+//
+//        fun getAllMultipleAnswersFromSharedPreferences(context: Context): Map<Int, List<Int>> {
+//            val sharedPreferences = context.getSharedPreferences("omr_result", Context.MODE_PRIVATE)
+//            val totalQuestions = sharedPreferences.getInt("total_questions", 0)
+//            val results = mutableMapOf<Int, List<Int>>()
+//
+//            for (questionNumber in 1..totalQuestions) {
+//                results[questionNumber] = getMultipleAnswersFromSharedPreferences(context, questionNumber)
+//            }
+//
+//            return results
+//        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
