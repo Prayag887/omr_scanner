@@ -10,7 +10,7 @@ material = "1.12.0"
 activity = "1.10.1"
 constraintlayout = "2.2.1"
 
-documentScanner = "16.0.0-beta1"
+documentScanner = "16.0.0"
 shimmer = "0.5.0"
 
 [libraries]
@@ -27,6 +27,6 @@ shimmer = { module = "com.facebook.shimmer:shimmer", version.ref = "shimmer" }
 
 [plugins]
 #change to library here
-android-application = { id = "com.android.library", version.ref = "agp" }
+android-application = { id = "com.android.application", version.ref = "agp" } #library
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 
