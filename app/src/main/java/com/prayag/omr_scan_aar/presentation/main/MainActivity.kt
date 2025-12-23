@@ -11,6 +11,7 @@ import android.view.View
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -19,22 +20,18 @@ import com.prayag.omr_scan_aar.presentation.omrresult.ResultActivity
 import com.prayag.omr_scan_aar.presentation.scanner.DocumentScannerActivity
 import com.prayag.omr_scan_aar.presentation.scanner.DocumentScannerCallback
 import org.koin.androidx.viewmodel.ext.android.viewModel
-import org.opencv.android.BaseLoaderCallback
-import org.opencv.android.CameraBridgeViewBase
-import org.opencv.android.JavaCameraView
-import org.opencv.android.LoaderCallbackInterface
-import org.opencv.android.OpenCVLoader
-import org.opencv.android.Utils
+import org.opencv.android.*
 import org.opencv.core.Mat
 
 class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListener2 {
+
     private val viewModel: MainViewModel by viewModel()
 
     private lateinit var imageView: ImageView
     private lateinit var cameraView: JavaCameraView
     private lateinit var btnCapture: Button
+    private lateinit var btnGallery: Button
     private lateinit var btnProcess: Button
-//    private lateinit var btnToggleCamera: FloatingActionButton
 
     private var currentFrame: Mat? = null
 
@@ -42,6 +39,36 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         private const val TAG = "MainActivity"
         private const val CAMERA_PERMISSION_REQUEST_CODE = 300
     }
+
+//    -------------------- Gallery Picker --------------------
+
+    private val galleryLauncher =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            if (uri != null) {
+                try {
+                    contentResolver.openInputStream(uri)?.use { inputStream ->
+                        val bitmap = BitmapFactory.decodeStream(inputStream)
+                        if (bitmap != null) {
+                            viewModel.saveBitmapAsDocument(bitmap)
+
+                            imageView.setImageBitmap(bitmap)
+                            imageView.visibility = View.VISIBLE
+                            cameraView.visibility = View.GONE
+
+                            btnProcess.visibility = View.VISIBLE
+                            btnProcess.isEnabled = true
+
+                            Toast.makeText(this, "Image selected from gallery", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to load gallery image", e)
+                    Toast.makeText(this, "Failed to load image", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+//     -------------------- OpenCV Loader --------------------
 
     private val loaderCallback = object : BaseLoaderCallback(this) {
         override fun onManagerConnected(status: Int) {
@@ -67,6 +94,8 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         }
     }
 
+//    -------------------- Lifecycle --------------------
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -82,8 +111,8 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         imageView = findViewById(R.id.previewOmrImage)
         cameraView = findViewById(R.id.camera_view)
         btnCapture = findViewById(R.id.btnCapture)
+        btnGallery = findViewById(R.id.btnGallery)
         btnProcess = findViewById(R.id.btnProcess)
-//        btnToggleCamera = findViewById(R.id.btnToggleCamera)
 
         btnProcess.isEnabled = true
         cameraView.visibility = View.GONE
@@ -91,12 +120,16 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
 
     private fun setupListeners() {
         btnCapture.setOnClickListener { handleCaptureClick() }
+
+        btnGallery.setOnClickListener {
+            galleryLauncher.launch("image/*")
+        }
+
         btnProcess.setOnClickListener {
             val intent = Intent(this, ResultActivity::class.java)
             intent.putExtra("image_path", "${filesDir}/paper.png")
             startActivity(intent)
         }
-//        btnToggleCamera.setOnClickListener { handleToggleCameraClick() }
     }
 
     private fun loadNativeLibrary() {
@@ -110,9 +143,7 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
     }
 
     private fun observeViewModel() {
-        viewModel.isLiveMode.observe(this) { isLiveMode ->
-            updateUIForLiveMode(isLiveMode)
-        }
+        viewModel.isLiveMode.observe(this) { updateUIForLiveMode(it) }
 
         viewModel.documentScanResult.observe(this) { result ->
             if (result.success && result.bitmap != null) {
@@ -132,6 +163,8 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         viewModel.loadLatestScannedDocument()
     }
 
+//    -------------------- Capture / Scanner --------------------
+
     private fun handleCaptureClick() {
         if (viewModel.isLiveMode.value == true) {
             captureLiveFrame()
@@ -149,26 +182,22 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
     }
 
     private fun launchDocumentScanner() {
-        // Set up the callback before launching scanner activity
         DocumentScannerActivity.scannerCallback = object : DocumentScannerCallback {
             override fun onDocumentScanned(success: Boolean, filePath: String?) {
                 runOnUiThread {
                     if (success && filePath != null) {
-                        // Show success toast
                         Toast.makeText(
                             this@MainActivity,
                             "Image captured successfully! You can process it now.",
                             Toast.LENGTH_LONG
                         ).show()
 
-                        // Refresh the image preview
-                        val capturedBitmap = BitmapFactory.decodeFile(filePath)
-                        imageView.setImageBitmap(capturedBitmap)
+                        val bitmap = BitmapFactory.decodeFile(filePath)
+                        imageView.setImageBitmap(bitmap)
                         imageView.visibility = View.VISIBLE
                         btnProcess.visibility = View.VISIBLE
                         btnProcess.isEnabled = true
                     } else {
-                        // Only show cancellation message if scan failed or was canceled
                         Toast.makeText(
                             this@MainActivity,
                             "Document scanning canceled",
@@ -179,24 +208,38 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
             }
         }
 
-        // Launch the document scanner activity
-        val intent = Intent(this, DocumentScannerActivity::class.java)
-        startActivity(intent)
+        startActivity(Intent(this, DocumentScannerActivity::class.java))
     }
 
-    private fun handleToggleCameraClick() {
-        if (viewModel.isLiveMode.value == true) {
-            viewModel.toggleLiveMode()
+//    -------------------- Live Mode --------------------
+
+    private fun updateUIForLiveMode(isLiveMode: Boolean) {
+        if (isLiveMode) {
+            imageView.visibility = View.GONE
+            cameraView.visibility = View.VISIBLE
+            btnProcess.visibility = View.GONE
+            btnCapture.text = "Capture Frame"
+
+            if (viewModel.isOpenCVLoaded.value == true) {
+                cameraView.enableView()
+            } else {
+                Toast.makeText(this, "OpenCV not loaded yet", Toast.LENGTH_SHORT).show()
+            }
         } else {
-            checkCameraPermissionAndToggleLiveMode()
+            cameraView.disableView()
+            cameraView.visibility = View.GONE
+            imageView.visibility = View.VISIBLE
+            btnProcess.visibility =
+                if (viewModel.documentScanResult.value?.bitmap != null) View.VISIBLE else View.GONE
+            btnCapture.text = "Capture"
         }
     }
 
+//    -------------------- Camera Permission -------------------/
+
     private fun checkCameraPermissionAndToggleLiveMode() {
-        if (ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.CAMERA
-            ) != PackageManager.PERMISSION_GRANTED
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+            != PackageManager.PERMISSION_GRANTED
         ) {
             ActivityCompat.requestPermissions(
                 this,
@@ -208,69 +251,35 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         }
     }
 
-    private fun updateUIForLiveMode(isLiveMode: Boolean) {
-        if (isLiveMode) {
-            imageView.visibility = View.GONE
-            cameraView.visibility = View.VISIBLE
-            btnProcess.visibility = View.GONE
-            btnCapture.text = "Capture Frame"
-            if (viewModel.isOpenCVLoaded.value == true) {
-                cameraView.enableView()
-            } else {
-                Toast.makeText(this, "OpenCV not loaded yet", Toast.LENGTH_SHORT).show()
-            }
-        } else {
-            cameraView.disableView()
-            cameraView.visibility = View.GONE
-            imageView.visibility = View.VISIBLE
-            btnProcess.visibility = if (viewModel.documentScanResult.value?.bitmap != null) View.VISIBLE else View.GONE
-            btnCapture.text = "Capture"
-        }
-    }
-
-    private fun convertMatToBitmap(mat: Mat): Bitmap {
-        val bitmap = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888)
-        Utils.matToBitmap(mat, bitmap)
-        return bitmap
-    }
-
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        when (requestCode) {
-            CAMERA_PERMISSION_REQUEST_CODE -> {
-                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    viewModel.toggleLiveMode()
-                } else {
-                    Toast.makeText(
-                        this,
-                        "Camera permission required for live mode",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
+        if (requestCode == CAMERA_PERMISSION_REQUEST_CODE &&
+            grantResults.isNotEmpty() &&
+            grantResults[0] == PackageManager.PERMISSION_GRANTED
+        ) {
+            viewModel.toggleLiveMode()
         }
     }
+
+//    -------------------- OpenCV Lifecycle --------------------
 
     override fun onResume() {
         super.onResume()
 
-        // Initialize OpenCV
         if (!OpenCVLoader.initDebug()) {
             OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, this, loaderCallback)
         } else {
             loaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS)
         }
 
-        // Enable camera if in live mode
         if (viewModel.isLiveMode.value == true && viewModel.isOpenCVLoaded.value == true) {
             cameraView.enableView()
         }
 
-        // Refresh the latest scanned document
         viewModel.loadLatestScannedDocument()
     }
 
@@ -284,7 +293,8 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         cameraView.disableView()
     }
 
-    // Camera callbacks
+//     -------------------- Camera Callbacks --------------------
+
     override fun onCameraViewStarted(width: Int, height: Int) {}
     override fun onCameraViewStopped() {}
 
@@ -292,5 +302,11 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         val rgba = inputFrame?.rgba() ?: return Mat()
         currentFrame = rgba.clone()
         return viewModel.processFrame(rgba)
+    }
+
+    private fun convertMatToBitmap(mat: Mat): Bitmap {
+        val bitmap = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888)
+        Utils.matToBitmap(mat, bitmap)
+        return bitmap
     }
 }

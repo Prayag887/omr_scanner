@@ -41,8 +41,10 @@
                     android:id="@+id/previewOmrImage"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:scaleType="centerCrop"
-                    android:visibility="gone" />
+                    android:adjustViewBounds="true"
+                    android:scaleType="fitCenter"
+                    android:background="@android:color/black" />
+
             </FrameLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -75,6 +77,7 @@
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Bottom Buttons -->
+        <!-- Bottom Buttons -->
         <LinearLayout
             android:id="@+id/bottomButtonsLayout"
             android:layout_width="match_parent"
@@ -90,8 +93,13 @@
                 android:layout_width="0dp"
                 android:layout_height="48dp"
                 android:layout_weight="1"
-                android:layout_marginEnd="8dp"
+                android:layout_marginEnd="6dp"
                 android:text="Capture"
+                app:iconSize="14dp"
+                app:iconPadding="6dp"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+
                 android:textAllCaps="false"
                 android:textColor="#FFFFFF"
                 android:backgroundTint="#5D5FEF"
@@ -101,12 +109,37 @@
                 app:iconGravity="textStart" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnGallery"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:layout_marginEnd="6dp"
+                android:text="Gallery"
+                android:textAllCaps="false"
+                app:iconSize="14dp"
+                app:iconPadding="6dp"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#009688"
+                app:cornerRadius="12dp"
+                app:icon="@drawable/ic_gallery"
+                app:iconTint="#FFFFFF"
+                app:iconGravity="textStart" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnProcess"
                 android:layout_width="0dp"
                 android:layout_height="48dp"
                 android:layout_weight="1"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="6dp"
                 android:text="Process"
+                app:iconSize="14dp"
+                app:iconPadding="6dp"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+
                 android:textAllCaps="false"
                 android:enabled="false"
                 android:textColor="#FFFFFF"
@@ -116,6 +149,7 @@
                 app:iconTint="#FFFFFF"
                 app:iconGravity="textStart" />
         </LinearLayout>
+
 
         <!-- Floating Action Button (Optional Live Mode) -->
         <!--

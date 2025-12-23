@@ -12,13 +12,16 @@ android {
     compileSdk = 35
 
     defaultConfig {
-//        applicationId = "com.prayag.omr_scan_aar"
         minSdk = 24
         targetSdk = 35
 //        versionCode = 1
 //        versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+//        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        androidResources {
+            // Only include English resources
+            localeFilters += listOf("en")
+        }
         externalNativeBuild {
             cmake {
                 cppFlags += "-std=c++11"
@@ -26,8 +29,7 @@ android {
             }
         }
         ndk {
-//            abiFilters += setOf("armeabi-v7a")
-            abiFilters += setOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            abiFilters += setOf("arm64-v8a")
         }
 
         buildFeatures {
@@ -38,13 +40,23 @@ android {
 
     buildTypes {
         release {
-//            isMinifyEnabled = true
-//            isShrinkResources = true
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
             signingConfig = signingConfigs.getByName("debug")
+        }
+        debug {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            signingConfig = signingConfigs.getByName("debug")
+            buildConfigField("boolean", "DEBUG", "true")
         }
     }
     compileOptions {
@@ -126,41 +138,24 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
     implementation(project(":OpenCV-sdk"))
-
-    // Latest ML Kit Document Scanner dependency
-//    implementation ("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0-beta1")
-
-    // For ML Kit base functionality
-    implementation ("com.google.mlkit:vision-common:17.3.0")
-
+    // To recognize Latin script
+    implementation("com.google.mlkit:text-recognition:16.0.1")
     // CameraX Core Library
     implementation ("androidx.camera:camera-core:1.4.2")
-
     // CameraX Camera2 Implementation
     implementation ("androidx.camera:camera-camera2:1.4.2")
-
     // CameraX Lifecycle
     implementation ("androidx.camera:camera-lifecycle:1.4.2")
-
     // CameraX View for Preview
     implementation ("androidx.camera:camera-view:1.4.2")
-
-    // Optional: For image analysis
-    implementation ("androidx.camera:camera-extensions:1.4.2")
-
-
+//    // Optional: For image analysis
+//    implementation ("androidx.camera:camera-extensions:1.4.2")
     implementation(libs.document.scanner)
-
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar"))))
-
-    //shimmer effect for the ui
-    implementation ("com.facebook.shimmer:shimmer:0.5.0")
-
     implementation ("com.google.android.material:material:1.12.0")
 
-    implementation("io.insert-koin:koin-android:3.5.0")
-
-    implementation("io.insert-koin:koin-core:3.5.0")
+    implementation("io.insert-koin:koin-android:4.1.0")
+    implementation("io.insert-koin:koin-core:4.1.0")
 
     testImplementation("io.insert-koin:koin-test-junit5:3.5.0")
 

@@ -9,8 +9,8 @@ import com.prayag.omr_scan_aar.presentation.main.MainViewModel
 import com.prayag.omr_scan_aar.presentation.omrresult.ResultViewModel
 import com.prayag.omr_scan_aar.utils.BitmapUtils
 import com.prayag.omr_scan_aar.utils.OpenCVUtils
-import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
+import org.koin.core.module.dsl.viewModel
 
 val appModule = module {
     // Utils
@@ -19,6 +19,8 @@ val appModule = module {
 
     // Repositories
     single<DocumentRepository> { DocumentRepositoryImpl(get()) }
+
+    // ViewModels
     viewModel { MainViewModel(get(), get()) }
 
     // Repository binding
